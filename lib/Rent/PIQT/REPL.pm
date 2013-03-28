@@ -77,15 +77,32 @@ sub _build_term {
     $t->Attribs->{'completion_function'} = sub { $self->db->name_completion(@_) };
 }
 
-sub process {
-
+# Execute an internal command.
+sub execute {
+    my ($self, $command) = @_;
 }
 
+# Process a line of SQL.
+sub process {
+}
+
+# Register an internal command. Multiple commands can be registered at the same
+# time by specifying multiple command names in the arguments. The last argument
+# must be a code reference.
+#
+# The code reference should accept multiple arguments. The first argument is a
+# reference to the REPL instance. The rest of the arguments are the pre-parsed
+# command arguments as entered in the REPL interface.
 sub register {
     my ($self, @args) = @_;
     my $code = pop @args;
+
     foreach (@args) {
-        $self->_commands->{$_} = $code;
+        if (ref $code eq 'CODE') {
+            $self->_commands->{$_} = $code;
+        } else {
+            warn "Cannot register internal command '$_' to point to a " . ref($code);
+        }
     }
 }
 
@@ -109,7 +126,9 @@ sub run {
             next;
         }
 
-        $query =~ s#[;/]\s*$##g;
+        $query = $self->db->sanitize($query);
+
+        #$query =~ s#[;/]\s*$##g;
         #if ($self->config->echo) {
         #    $query =~ s#\s+# #g;
         #    $self->output->debug($query);
