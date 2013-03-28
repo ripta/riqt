@@ -1,6 +1,6 @@
 package Rent::PIQT::Cache;
 
-use Moose::Role;
+use Moo::Role;
 
 has controller => (is => 'rw', weak_ref => 1);
 

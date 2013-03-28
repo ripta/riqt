@@ -1,6 +1,6 @@
 package Rent::PIQT::REPL;
 
-use Moose;
+use Moo;
 
 # Reference to cache handler. Required, defaults to memory cache.
 has 'cache' => (is => 'rw', isa => 'Rent::PIQT::Cache',
