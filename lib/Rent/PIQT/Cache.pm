@@ -1,19 +1,27 @@
 package Rent::PIQT::Cache;
 
-use Moo::Role;
+use Moo;
 
-has controller => (is => 'rw', weak_ref => 1);
+with 'Rent::PIQT::Component';
 
-requires 'get';
-requires 'set';
 
-requires 'load';
-requires 'save';
-requires 'touch';
+# delete($self, $key)
+sub delete { return; }
 
-sub DEMOLISH {
-    my ($self) = @_;
-    $self->save;
-}
+# get($self, $key)
+sub get { return; }
+
+# set($self, $key, $value)
+sub set { return; }
+
+# load()
+sub load { return; }
+
+# save()
+sub save { return; }
+
+# touch()
+sub touch { return; }
+
 
 1;
