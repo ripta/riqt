@@ -30,7 +30,7 @@ sub record {
         my $field = $fields->[$idx];
         my $value = $values->[$idx];
 
-        $self->sink->print($self->{'_fmt'}, $field->{'name'}, $value);
+        $self->out->print($self->{'_fmt'}, $field->{'name'}, $value);
     }
 }
 

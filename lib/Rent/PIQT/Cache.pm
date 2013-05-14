@@ -1,6 +1,6 @@
 package Rent::PIQT::Cache;
 
-use Moo;
+use Moo::Role;
 
 with 'Rent::PIQT::Component';
 
