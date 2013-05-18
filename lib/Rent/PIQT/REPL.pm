@@ -3,9 +3,10 @@ package Rent::PIQT::REPL;
 use Moo;
 
 use Class::Load qw/try_load_class/;
+use Data::Dumper;
 use Term::ReadLine;
 
-our $VERSION = '0.01.0000';
+our $VERSION = '0.02.0601';
 
 # Generate the 'isa' clause for some 'has' below.
 sub _generate_isa_for {
@@ -261,7 +262,7 @@ sub run {
         if ($self->db->prepare($query) && $self->db->execute) {
             $self->output->start($self->db->field_prototypes);
             while (my $row = $self->db->fetch_array) {
-                $self->output->record($row);
+                $self->output->record([ @$row ]);
             }
 
             $self->output->finish;

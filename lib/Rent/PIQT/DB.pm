@@ -11,6 +11,7 @@ has 'database' => (
 has 'driver' => (
     is => 'lazy',
 );
+requires '_build_driver';
 
 has 'last_error' => (
     is => 'rw',
