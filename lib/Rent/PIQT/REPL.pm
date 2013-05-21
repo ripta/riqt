@@ -260,12 +260,15 @@ sub run {
         #}
 
         if ($self->db->prepare($query) && $self->db->execute) {
-            $self->output->start($self->db->field_prototypes);
-            while (my $row = $self->db->fetch_array) {
-                $self->output->record([ @$row ]);
-            }
+            if ($self->db->has_result_set) {
+                $self->output->start($self->db->field_prototypes);
+                while (my $row = $self->db->fetch_array) {
+                    $self->output->record([ @$row ]);
+                }
 
-            $self->output->finish;
+                $self->output->finish;
+            } else {
+            }
         } else {
             $self->output->error($self->db->last_error);
         }

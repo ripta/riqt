@@ -96,6 +96,10 @@ sub field_prototypes {
     return $prototypes;
 }
 
+sub has_result_set {
+    return $_[0]->is_select;
+}
+
 sub is_select {
     my ($self) = @_;
     return unless $self->statement;
@@ -125,6 +129,12 @@ sub prepare {
 # query_is_complete($self, $query) => 0 | 1
 sub query_is_complete {
     return 1;
+}
+
+# rows_affected() => undef | Int
+sub rows_affected {
+    my ($self) = @_;
+    return $self->statement ? $self->statement->rows : undef;
 }
 
 # sanitize($self, $query) => $sanitized_query
