@@ -144,7 +144,7 @@ has '_done' => (
     is => 'rw',
     isa => sub { die "Done flag must be Bool" if ref $_[0] },
     default => sub { 0 },
-    required => 1,
+    required => 0,
 );
 
 # The current prompt. The default ain't pretty.
