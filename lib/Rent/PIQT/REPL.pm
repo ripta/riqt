@@ -6,7 +6,7 @@ use Class::Load qw/try_load_class/;
 use Data::Dumper;
 use Term::ReadLine;
 
-our $VERSION = '0.02.0601';
+our $VERSION = '0.5.0';
 
 # Generate the 'isa' clause for some 'has' below.
 sub _generate_isa_for {
