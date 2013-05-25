@@ -96,6 +96,15 @@ has 'db' => (
             %q = map { split /=/ } split /&/, $4 if $4;
             $q{'database'} = $2;
             (@args) = (\%q);
+        } elsif ($val =~ m{^([^/]+)/([^@]+)@(.+)$}) {
+            $klass = 'oracle';
+            push @args, {
+                username => $1,
+                password => $2,
+                database => $3,
+            };
+        } else {
+            die "unknown database format '$val'";
         }
         return unless $klass;
 
