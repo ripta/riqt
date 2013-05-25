@@ -89,7 +89,7 @@ has 'db' => (
         my ($klass, @args);
         if (ref $val eq 'ARRAY') {
             ($klass, @args) = @$val;
-        } elsif ($val =~ m{([^:]+)://([^\?]+)(\?(.+))?}) {
+        } elsif ($val =~ m{^([^:]+)://([^\?]+)(\?(.+))?$}) {
             $klass = $1;
 
             my (%q);
