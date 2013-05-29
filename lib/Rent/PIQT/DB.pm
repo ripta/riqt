@@ -117,6 +117,15 @@ sub prepare {
     my ($self, $query) = @_;
     $self->last_query($query) if $query;
 
+    unless ($self->last_query) {
+        $self->controller->output->error('Execution buffer is empty. Please specify a query or PL/SQL block to execute');
+        return 0;
+    }
+
+    if ($self->controller->config->echo) {
+        $self->controller->output->infof("Query: %s", $self->last_query);
+    }
+
     my $sth = $self->driver->prepare($self->last_query);
     if ($sth) {
         $self->statement($sth);
