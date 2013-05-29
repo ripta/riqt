@@ -2,44 +2,56 @@ package Rent::PIQT::Output::Tabular;
 
 use Moo;
 use String::Escape qw/printable/;
+use Time::HiRes qw/gettimeofday tv_interval/;
 
 with 'Rent::PIQT::Output';
 
-has 'field_names', (is => 'rw');
+has 'fields', (is => 'rw');
 has 'field_sizes', (is => 'rw');
 has 'records', (is => 'rw');
+
+has 'start_time', (is => 'rw');
 
 sub start {
     my ($self, $fields) = @_;
 
-    $self->field_names([]);
-    $self->field_sizes([]);
+    $self->start_time([ gettimeofday ]);
+    $self->fields([ @$fields ]);
+    $self->records([ ]);
+
+    $self->field_sizes([ ]);
     foreach my $field (@$fields) {
         my ($name, $type, $size) = @$field{qw/name type size/};
-        push @{$self->field_names}, $name;
-        push @{$self->field_sizes}, length($name) || 0;
+        push @{ $self->field_sizes }, length($name) || 0;
     }
-
-    $self->records([]);
 }
 
 sub finish {
     my ($self) = @_;
 
-    my $fmt_string;
+    my $fmt_string = "";
+    my @seps = ();
     do {
         my @fmts = ();
         foreach (@{ $self->field_sizes }) {
-            push @fmts, '%' . $_ . 's';
+            push @fmts, '%-' . $_ . 's';
+            push @seps, '=' x $_;
         }
 
-        $fmt_string = '| ' . join(' | ', @fmts) . ' |' . "\n";
+        $fmt_string = join(' ', @fmts);
     };
 
-    $self->out->print(sprintf($fmt_string, @{$self->field_names}));
-    foreach (@{$self->records}) {
-        $self->out->print(sprintf($fmt_string, @{$_}));
+    $self->println;
+    $self->printlnf($fmt_string, map { $_->{'name'} } @{ $self->fields });
+    $self->printlnf($fmt_string, @seps);
+    foreach my $record (@{$self->records}) {
+        $self->printlnf($fmt_string, map { $_ || '(null)' } @$record);
     }
+
+    $self->infof("%d rows affected (%.2f seconds)",
+        scalar(@{ $self->records }),
+        tv_interval($self->start_time)
+    ) if $self->start_time;
 }
 
 sub record {
