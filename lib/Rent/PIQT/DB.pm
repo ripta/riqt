@@ -131,7 +131,7 @@ sub prepare {
         $self->statement($sth);
         return 1;
     } else {
-        $self->last_error($sth->errstr);
+        $self->last_error($self->driver->errstr);
         $self->statement(undef);
         return 0;
     }
