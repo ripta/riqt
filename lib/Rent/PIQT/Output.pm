@@ -1,6 +1,7 @@
 package Rent::PIQT::Output;
 
 use Moo::Role;
+use Term::ANSIColor;
 
 with 'Rent::PIQT::Component';
 
@@ -15,6 +16,14 @@ has 'out' => (
     required => 1,
 );
 
+has 'is_interactive' => (
+    is => 'lazy',
+    required => 0,
+);
+sub _build_is_interactive {
+    return -t select;
+}
+
 # The start and end of output. Signatures:
 #   start(\@fields)
 #       [{name => ..., type => ..., length => ...}, ...]
@@ -25,6 +34,13 @@ requires qw/start finish/;
 # A single record:
 #   record(\@field_values)
 requires qw/record/;
+
+sub colorize {
+    my ($self, $msg, $color) = @_;
+    return $msg unless $self->is_interactive;
+
+    return color($color) . $msg . color('reset');
+}
 
 sub debug {
     my ($self, $msg) = @_;
