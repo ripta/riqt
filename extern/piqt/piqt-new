@@ -57,6 +57,8 @@ my $repl = Rent::PIQT::REPL->new(
     output => ["tabular", out => $output_fh, err => $error_fh],
 );
 
+$repl->config->verbose($sql ? $verbose || 0 : $verbose + 1);
+
 $repl->register('exit', 'quit', '\q',
     sub {
         my ($self) = @_;
@@ -79,11 +81,9 @@ $repl->register('set',
 );
 
 if ($sql) {
-    $repl->config->verbose($verbose || 0);
     $repl->output("csv");
     $repl->process($sql);
 } else {
-    $repl->config->verbose($verbose + 2);
     $repl->run;
 }
 
