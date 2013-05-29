@@ -2,6 +2,7 @@ package Rent::PIQT::REPL;
 
 use Moo;
 
+use Carp;
 use Class::Load qw/try_load_class/;
 use Data::Dumper;
 use Term::ReadLine;
@@ -14,8 +15,7 @@ sub _generate_isa_for {
     return sub {
         die "'" . lc($name) . "' attribute of Rent::PIQT::REPL is required" unless $_[0];
         my $info = ref($_[0]) || $_[0];
-        die "'" . lc($name) . "' attribute of Rent::PIQT::REPL, which is a '$info' must implement Rent::PIQT::Component" unless $_[0]->does("Rent::PIQT::Component");
-        die "'" . lc($name) . "' attribute of Rent::PIQT::REPL, which is a '$info' must implement Rent::PIQT::$name" unless $_[0]->does("Rent::PIQT::$name");
+        die "'" . lc($name) . "' attribute of Rent::PIQT::REPL, which is a '$info' must implement Rent::PIQT::$name" unless $_[0]->does("Rent::PIQT::$name") || $_[0]->isa("Rent::PIQT::$name");
     };
 }
 
@@ -47,14 +47,14 @@ sub _search_under {
     );
 
     my ($success, $error);
+    local $Carp::CarpLevel = $Carp::CarpLevel + 2;
     foreach my $klass_name (map { $base . '::' . $_ } @permutations) {
         ($success, $error) = try_load_class($klass_name);
         return $klass_name if $success;
+        Carp::croak($error) if $error && $error !~ m/^Can't locate/;
     }
 
-    require Carp;
-    local $Carp::CarpLevel = $Carp::CarpLevel + 2;
-    Carp::croak($error);
+    Carp::croak("Cannot locate any of " . join(', ', @permutations));
 }
 
 # Reference to cache handler. Required, defaults to memory cache.
@@ -127,7 +127,9 @@ has 'output' => (
 # The cache, config, db, and output attributes need a reference back to the
 # controller (that's us).
 sub _set_controller {
-    $_[1]->controller($_[0]);
+    my ($self, $attr) = @_;
+    $attr->controller($self);
+    return $attr;
 }
 
 # Registered internal commands.
@@ -154,7 +156,7 @@ has '_prompt' => (
     builder => 1,
 );
 sub _build__prompt {
-    return '> ';
+    return 'SQL> ';
 }
 
 # Terminal handler, defaults to Term::ReadLine. The selection of a proper driver
@@ -170,6 +172,8 @@ sub _build__term {
 
     my $t = Term::ReadLine->new('piqt');
 
+    # Depending on the ReadLine driver---and unfortunately we have to compare
+    # by string---we have to set up history differently
     if ($t->ReadLine eq 'Term::ReadLine::Gnu') {
         $t->stifle_history($ENV{'HISTSIZE'} || 2000);
         $t->ReadHistory($h) if -f $h;
@@ -189,10 +193,22 @@ sub _build__term {
         $o->info("Welcome to piqt " . $self->version . " with unknown readline support");
     }
 
+    # Set back the history file
     $self->config->history_file($h);
 
+    # Attach a completion handler
     $t->Attribs->{'completion_function'} = sub { $self->db->name_completion(@_) };
+
     return $t;
+}
+
+# Execute POSTBUILD on every component.
+sub BUILD {
+    my ($self) = @_;
+    foreach my $name (qw/cache config db output/) {
+        my $attr = $self->$name;
+        $attr->POSTBUILD if $attr->can('POSTBUILD');
+    }
 }
 
 # Execute an internal command.
@@ -231,57 +247,68 @@ sub register {
         if (ref $code eq 'CODE') {
             $self->_commands->{uc($_)} = $code;
         } else {
-            warn "Cannot register internal command '$_' to point to a " . ref($code);
+            $self->output->warnf("Cannot register internal command '%s' to point to a %s", $_, ref($code));
         }
     }
 }
 
+# The main loop of the REPL, which handles all four stages.
 sub run {
     my ($self) = @_;
     my $query = '';
 
+    # Set the default prompt to the database's data source name
     $self->_prompt($self->db->dsn . '> ');
 
+    # Loop until we're told to exit
     while (!$self->_done) {
-        $self->output->out->print("\n");
-
+        # Read a single line from the terminal
+        $query ||= '';
         $query .= $self->_term->readline($self->_prompt);
         last unless defined $query;
 
+        # Skip any blank lines and any internal commands correctly handled
         if ($query =~ /^\s*$/s || $self->execute($query)) {
+            $self->output->println;
             $query = '';
             next;
         }
 
+        # Display a continuation prompt if the query isn't already complete
         unless ($self->db->query_is_complete($query)) {
             $self->_prompt('> ');
             $query .= ' ';
             next;
         }
 
+        # Sanitize the query as necesary
         $query = $self->db->sanitize($query);
 
-        #$query =~ s#[;/]\s*$##g;
-        #if ($self->config->echo) {
-        #    $query =~ s#\s+# #g;
-        #    $self->output->debug($query);
-        #    $self->output->debug("{ROW LIMIT " . $self->config->limit . "}") if $self->config->limit;
-        #}
-
+        # Prepare and execute the query
         if ($self->db->prepare($query) && $self->db->execute) {
+            # Only show a result set if the query produces a result set
             if ($self->db->has_result_set) {
+                my $limit   = $self->config->limit || $self->config->deflimit || 0;
+                my $row_num = 0;
+
+                # Output a header and each record
                 $self->output->start($self->db->field_prototypes);
                 while (my $row = $self->db->fetch_array) {
                     $self->output->record([ @$row ]);
+                    last if $limit && ++$row_num >= $limit;
                 }
 
+                # Finish up
                 $self->output->finish;
+                $self->output->info("There may be more rows") if $row_num >= $limit;
             } else {
+                # TODO
             }
         } else {
             $self->output->error($self->db->last_error);
         }
 
+        $self->output->println;
         $self->_prompt($self->db->dsn . '> ');
         $query = '';
     }
