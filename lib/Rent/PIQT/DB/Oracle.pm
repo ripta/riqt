@@ -7,10 +7,18 @@ with "Rent::PIQT::DB";
 
 sub _build_driver {
     my ($self) = @_;
+
     return DBI->connect(
         'dbi:Oracle:' . $self->database,
         $self->username,
-        $self->password
+        $self->password,
+        {
+            'AutoCommit'  => 0,
+            'LongReadLen' => 1024,
+            'LongTruncOk' => 1,
+            'RaiseError'  => 1,
+            'PrintError'  => 0,
+        }
     );
 }
 
