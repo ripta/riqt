@@ -67,18 +67,6 @@ $repl->register('exit', 'quit', '\q',
         return 1;
     }
 );
-$repl->register('set',
-    sub {
-        my ($self, $name, $value) = @_;
-        if (defined $value) {
-            $self->output->info("SET $name $value");
-        } else {
-            $self->output->info("SET $name " . $self->config->$name);
-        }
-
-        return 1;
-    }
-);
 
 if ($sql) {
     $repl->output("csv");
