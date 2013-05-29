@@ -40,7 +40,9 @@ has 'username' => (
 
 # disconnect() => 0 | 1
 sub disconnect {
-    return $_[0]->driver ? $_[0]->driver->disconnect : 0;
+    my ($self) = @_;
+    eval { $self->statement->finish } if $self->statement;
+    return $self->driver ? $self->driver->disconnect : 0;
 }
 
 sub dsn {
