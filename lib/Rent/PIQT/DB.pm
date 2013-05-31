@@ -38,6 +38,11 @@ has 'username' => (
 );
 
 
+sub DEMOLISH {
+    my ($self) = @_;
+    $self->disconnect;
+}
+
 # disconnect() => 0 | 1
 sub disconnect {
     my ($self) = @_;
@@ -47,11 +52,14 @@ sub disconnect {
 
 sub dsn {
     my ($self) = @_;
-    my $class = ref $self;
-    $class =~ s/.*:://;
-    return $self->username ?
-        sprintf("%s://%s?username=%s", lc($class), $self->database, $self->username) :
-        sprintf("%s://%s", lc($class), $self->database);
+    return $self->username
+            ? sprintf('%s@%s', $self->username, $self->database)
+            : $self->database;
+    # my $class = ref $self;
+    # $class =~ s/.*:://;
+    # return $self->username ?
+    #     sprintf("%s://%s?username=%s", lc($class), $self->database, $self->username) :
+    #     sprintf("%s://%s", lc($class), $self->database);
 }
 
 sub execute {
