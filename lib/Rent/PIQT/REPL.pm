@@ -203,10 +203,20 @@ sub _build__term {
 # Execute POSTBUILD on every component.
 sub BUILD {
     my ($self) = @_;
+
     foreach my $name (qw/cache config db output/) {
         my $attr = $self->$name;
         $attr->POSTBUILD if $attr->can('POSTBUILD');
     }
+
+    $self->register('exit', 'quit', '\q',
+        sub {
+            my ($self) = @_;
+            $self->output->info("BYE");
+            $self->_done(1);
+            return 1;
+        }
+    );
 }
 
 # Execute an internal command.

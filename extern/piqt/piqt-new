@@ -1,39 +1,50 @@
 #!/usr/bin/env perl
 
 use strict;
+
 use Getopt::Long;
 use IO::Handle;
 use Pod::Usage;
 
+use Class::Load qw/try_load_class/;
 use Rent::PIQT::REPL;
 
-# use Rent::PIQT::Cache;
-# use Rent::PIQT::Config;
-# use Rent::PIQT::DB;
-# use Rent::PIQT::Output;
-
+# Global options
 my $help = undef;
 my $verbose = 0;
 
-my $format      = 'csv';
-my $output_file = undef;
+# Driver options
+my $auto_connect    = undef;
+my $connect_string  = 'oracle://vqa';
+my $format          = undef;
+my $output_file     = undef;
 
-Getopt::Long::config('no_ignore_case');
+# Startup options
+my $config_driver   = 'file';
+my $startup_file    = '.piqtrc';
+
+# Other options
+my $list_drivers    = undef;
+
+# Parse various command-line arguments
+Getopt::Long::config('no_ignore_case', 'bundling');
 GetOptions(
-    'help|?'    => \$help,
-    'verbose+'  => \$verbose,
+    'help|?'                    => \$help,
+    'v|verbose+'                => \$verbose,
 
-    'format'    => \$format,
-    'output'    => \$output_file,
+    'a|auto-connect'            => \$auto_connect,
+    'c|connect=s'               => \$connect_string,
+    'f|format=s'                => \$format,
+    'o|output=s'                => \$output_file,
+
+    'i|ignore-startup-file!'    => sub { $config_driver = 'ignored' },
+    's|startup-file=s'          => \$startup_file,
+
+    'list-drivers'              => \$list_drivers,
 ) or pod2usage(2);
-
-STDOUT->autoflush(1);
-STDERR->autoflush(1);
-
 pod2usage(1) if $help;
 
-my ($conn, $sql) = @ARGV;
-
+# Open the output file, if specified; defaults to STDOUT and STDERR
 my ($output_fh, $error_fh);
 do {
     $error_fh = IO::Handle->new();
@@ -41,7 +52,7 @@ do {
     $error_fh->autoflush(1);
 
     if ($output_file) {
-        $output_fh = IO::File->new($output_file, 'w');
+        $output_fh = IO::File->new($output_file, 'a');
         $output_fh->autoflush(1);
     } else {
         $output_fh = IO::Handle->new();
@@ -50,29 +61,135 @@ do {
     }
 };
 
+# Handle auto-connect flag first, and if that isn't specified, then detect for
+# SQL*PLUS-style connect string
+if ($auto_connect) {
+    # First option is to load it from Company::Config
+    my ($load_success, $load_errstr) = try_load_class 'Company::Config';
+    if ($load_success) {
+        my $db_name = Company::Config::parameter('db_instance');
+        my $db_user = Company::Config::parameter('db_username');
+        my $db_pass = Company::Config::parameter('db_password');
+
+        if (!$db_pass && try_load_class('Company::Util')) {
+            $db_pass = Company::Util::get_password(
+                resource => sprintf('oracle:%s@%s', lc $db_user, lc $db_name),
+                noprompt => 1,
+            );
+        }
+
+        print STDERR "Auto-connecting to $db_user\@$db_name\n" if $verbose;
+        $connect_string = sprintf(
+            'oracle://%s?username=%s&password=%s',
+            $db_name,
+            $db_user,
+            $db_pass,
+        );
+    } elsif (exists $ENV{'ORACLE_SID'}) {
+        $connect_string = 'oracle://' . $ENV{'ORACLE_SID'};
+    } else {
+        print STDERR "$0: Cannot auto-connect without Company::Config or ORACLE_SID\n";
+        print STDERR "Loading Company::Config caused error:\n";
+        print STDERR "    $load_errstr\n";
+        print STDERR "Specify --help for more options\n";
+        exit(5);
+    }
+} elsif ($connect_string =~ m{^([^/]+)/([^@])@.+$}) {
+    $connect_string = sprintf(
+        'oracle://%s?username=%s&password=%s',
+        $3,
+        $1,
+        $2,
+    );
+}
+
+# Get the SQL query from the command line; the @rest might be used for
+# interpolated queries in the future
+my ($sql, @rest) = @ARGV;
+
+# The default format depends on whether we'll end up in interactive mode
+# or not: CSV in non-interactive, and tabular in interactive
+$format ||= $sql ? 'csv' : 'tabular';
+
 my $repl = Rent::PIQT::REPL->new(
     cache  => ["file", ".piqt_cache"],
-    config => ["file", ".piqtrc"],
-    db     => $conn || 'oracle://vqa',
-    output => ["tabular", out => $output_fh, err => $error_fh],
+    config => [$config_driver, $startup_file],
+    db     => $connect_string,
+    output => [$format, out => $output_fh, err => $error_fh],
 );
 
 $repl->config->verbose($sql ? $verbose || 0 : $verbose + 1);
 
-$repl->register('exit', 'quit', '\q',
-    sub {
-        my ($self) = @_;
-        $self->output->info("BYE");
-        $self->_done(1);
-        return 1;
-    }
-);
-
 if ($sql) {
-    $repl->output("csv");
     $repl->process($sql);
 } else {
     $repl->run;
 }
 
 exit();
+
+__END__
+=head1 NAME
+
+piqt - Perl Interactive Query Tool
+
+=head1 SYNOPSIS
+
+extern/piqt/piqt [opts] [sql]
+
+=head1 OPTIONS
+
+Generic options:
+
+  -v, --verbose Be verbose and print debugging information when running.
+                Specify multiple times to print more debugging.
+  -h, --help    Print help and exit
+
+Driver options:
+
+  --auto-connect
+  -a            Automatically connect to the default database of the env:
+                * If Company::Config can be loaded, then it'll connect to
+                  the default VIVA database.
+                * If Company::Config could not be loaded, could not be found,
+                  then it will look at $ORACLE_SID and attempt to connect to it.
+                * In any other case, it will die.
+
+  --connect <string>
+  -c <string>   Connect to the DSN specified. The <string> may be one of:
+                * DRIVER://DBNAME?username=DBUSER&password=DBPASS
+                  The DRIVER may be any of the ones listed in --list-drivers.
+                  The "password" parameter can be left off to log in without
+                  a password, or it can be specified without a DBPASS to log
+                  in with an empty password.
+                * DBUSER/DBPASS@DBNAME
+                  where the driver is assumed to be oracle. If DBPASS isn't
+                  provided but $WEBROOT is set, then the password is taken
+                  from the a file in $WEBROOT/passwords; if one doesn't exist,
+                  then no password is used.
+
+  --format <driver>
+  -f <driver>   Use a different output <driver>. Use --list-drivers to view
+                a list of available drivers.
+
+  --output <file>
+  -o <file>     Redirect STDOUT to <file>. If it doesn't exist, one will be
+                created. Otherwise, it is appended.
+
+Startup options:
+
+  --ignore-startup-file
+  -i            Ignore the start-up file ~/.piqtrc, which is useful if your
+                start-up file has errors.
+
+  --startup-file <file>
+  -s <file>     Use <file> as the startup file.
+
+Other options:
+
+  --list-drivers
+                Output a list of available drivers.
+
+=head1 AUTHOR
+
+Ripta Pasay <rpasay@rent.com>
