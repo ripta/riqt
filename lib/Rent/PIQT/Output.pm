@@ -38,6 +38,30 @@ requires qw/start finish/;
 #   record(\@field_values)
 requires qw/record/;
 
+sub BUILDARGS {
+    my ($class, $proto) = @_;
+    return unless $proto;
+    return $proto if ref $proto eq 'HASH';
+    return $proto unless $proto->can('err') && $proto->can('out');
+    return {
+        err => $proto->err,
+        out => $proto->out,
+    };
+}
+
+sub POSTBUILD {
+    my ($self) = @_;
+    $self->controller->config->register('mode',
+        sub {
+            my ($config, $name, $old_value, $new_value) = @_;
+            $config->controller->output([
+                $new_value,
+                $config->controller->output,
+            ]);
+        },
+    );
+}
+
 sub colorize {
     my ($self, $msg, $color) = @_;
     return $msg unless $self->is_interactive;

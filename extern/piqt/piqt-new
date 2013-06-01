@@ -115,7 +115,7 @@ my $repl = Rent::PIQT::REPL->new(
     cache  => ["file", ".piqt_cache"],
     config => [$config_driver, $startup_file],
     db     => $connect_string,
-    output => [$format, out => $output_fh, err => $error_fh],
+    output => [$format, {out => $output_fh, err => $error_fh}],
 );
 
 $repl->config->verbose($sql ? $verbose || 0 : $verbose + 1);
