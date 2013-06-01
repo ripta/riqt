@@ -1,14 +1,14 @@
 package Rent::PIQT::Output::CSV;
 
 use Moo;
-use String::Escape qw/qqbackslash/;
+use String::Escape qw/printable quote/;
 
 with 'Rent::PIQT::Output';
 
 
 sub start {
     my ($self, $fields) = @_;
-    $self->out->print(join(",", map { qqbackslash($_{'name'}) } @$fields) . "\n");
+    $self->out->print(join(",", map { quote printable $_->{'name'} } @$fields) . "\n");
 }
 
 sub finish {
@@ -18,7 +18,7 @@ sub finish {
 
 sub record {
     my ($self, $values) = @_;
-    $self->out->print(join(",", map { qqbackslash($_) } @$values) . "\n");
+    $self->out->print(join(",", map { quote printable $_ } @$values) . "\n");
 }
 
 1;
