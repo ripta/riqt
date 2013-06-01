@@ -30,8 +30,9 @@ sub record {
         my $field = $fields->[$idx];
         my $value = $values->[$idx];
 
-        $self->out->print($self->{'_fmt'}, $field->{'name'}, $value);
+        $self->printf($self->{'_fmt'}, $field->{'name'}, $value);
     }
+    $self->println;
 }
 
 1;
