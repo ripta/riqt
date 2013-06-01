@@ -238,6 +238,36 @@ sub execute {
 
 # Process a line of SQL.
 sub process {
+    my ($self, $query) = @_;
+
+    # Sanitize the query as necesary
+    $query = $self->db->sanitize($query);
+
+    # Prepare and execute the query
+    $self->output->start_timing;
+    if ($self->db->prepare($query) && $self->db->execute) {
+        # Only show a result set if the query produces a result set
+        my $row_num = 0;
+        if ($self->db->has_result_set) {
+            my $limit   = $self->config->limit || $self->config->deflimit || 0;
+
+            # Output a header and each record
+            $self->output->start($self->db->field_prototypes);
+            while (my $row = $self->db->fetch_array) {
+                $self->output->record([ @$row ]);
+                last if $limit && ++$row_num >= $limit;
+            }
+
+            # Finish up
+            $self->output->finish;
+            $self->output->warn("There may be more rows") if $row_num >= $limit;
+        }
+
+        $self->output->finish_timing($row_num || $self->db->rows_affected);
+    } else {
+        $self->output->reset_timing;
+        $self->output->error($self->db->last_error);
+    }
 }
 
 # Register an internal command. Multiple commands can be registered at the same
@@ -284,37 +314,13 @@ sub run {
 
         # Display a continuation prompt if the query isn't already complete
         unless ($self->db->query_is_complete($query)) {
-            $self->_prompt('> ');
+            $self->_prompt('+> ');
             $query .= ' ';
             next;
         }
 
-        # Sanitize the query as necesary
-        $query = $self->db->sanitize($query);
-
-        # Prepare and execute the query
-        if ($self->db->prepare($query) && $self->db->execute) {
-            # Only show a result set if the query produces a result set
-            if ($self->db->has_result_set) {
-                my $limit   = $self->config->limit || $self->config->deflimit || 0;
-                my $row_num = 0;
-
-                # Output a header and each record
-                $self->output->start($self->db->field_prototypes);
-                while (my $row = $self->db->fetch_array) {
-                    $self->output->record([ @$row ]);
-                    last if $limit && ++$row_num >= $limit;
-                }
-
-                # Finish up
-                $self->output->finish;
-                $self->output->info("There may be more rows") if $row_num >= $limit;
-            } else {
-                # TODO
-            }
-        } else {
-            $self->output->error($self->db->last_error);
-        }
+        eval { $self->process($query) };
+        $self->output->error($@) if $@;
 
         $self->output->println;
         $self->_prompt($self->db->dsn . '> ');
@@ -337,8 +343,6 @@ sub run {
             }
         }
     }
-
-    $self->db->disconnect;
 }
 
 # Return $VERSION
