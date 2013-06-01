@@ -10,7 +10,7 @@ sub start {
 
     my $max_length = 0;
     foreach my $field (@$fields) {
-        $max_length = length($field->{'name'}) if length($field->{'name'}) == $max_length;
+        $max_length = length($field->{'name'}) if length($field->{'name'}) > $max_length;
     }
     $self->{'_fmt'} = '%' . $max_length . 's' . "\n";
 
