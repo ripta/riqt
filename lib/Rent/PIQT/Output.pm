@@ -45,6 +45,19 @@ sub colorize {
     return color($color) . $msg . color('reset');
 }
 
+sub data_set {
+    my ($self, $field_definition, @records) = @_;
+    if (ref $field_definition eq 'CODE') {
+        ($field_definition, @records) = $field_definition->();
+    }
+
+    $self->start($field_definition);
+    foreach (@records) {
+        $self->record($_);
+    }
+    $self->finish;
+}
+
 sub debug {
     my ($self, $msg) = @_;
     return unless $self->controller->config->verbose;
