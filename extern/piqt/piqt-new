@@ -44,6 +44,44 @@ GetOptions(
 ) or pod2usage(2);
 pod2usage(1) if $help;
 
+if ($list_drivers) {
+    my $basefile = 'Rent/PIQT';
+    my $replfile = $basefile . '/REPL.pm';
+    my $replloc  = $INC{$replfile} || die "Cannot detect location of Rent::PIQT::REPL";
+
+    my $baseloc  = $replloc;
+    $baseloc =~ s#$replfile##x;
+
+    my $display = sub {
+        my ($component, $human_name, $set_cmd) = @_;
+        my $compfile = "Rent/PIQT/$component";
+        my $compdir  = "$baseloc/$compfile";
+
+        print STDERR "Supported $human_name drivers",
+                ($set_cmd ? " (can be set using '$set_cmd')" : ""), ":\n";
+
+        opendir my $dh, $compdir;
+        while (readdir $dh) {
+            next if /^\./;
+            next unless /\.pm$/;
+
+            s#/#::#g;
+            s#\.pm$##;
+
+            print STDERR "  $_\n";
+        }
+        closedir $dh;
+
+        print STDERR "\n";
+    };
+
+    print STDERR "\n";
+    $display->('DB', 'database');
+    $display->('Output', 'mode', 'SET MODE');
+    print STDERR "\n";
+    exit;
+}
+
 # Open the output file, if specified; defaults to STDOUT and STDERR
 my ($output_fh, $error_fh);
 do {
