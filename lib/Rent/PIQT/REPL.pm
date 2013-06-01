@@ -224,14 +224,12 @@ sub execute {
     my ($self, $command) = @_;
     return unless $self->_commands;
 
-    $command = uc($command);
-
-    if (exists $self->_commands->{$command}) {
-        return $self->_commands->{$command}->($self);
+    if (exists $self->_commands->{uc $command}) {
+        return $self->_commands->{uc $command}->($self);
     } else {
         my ($cmd_name, @cmd_args) = split /\s+/, $command;
-        if (exists $self->_commands->{$cmd_name}) {
-            return $self->_commands->{$cmd_name}->($self, @cmd_args);
+        if (exists $self->_commands->{uc $cmd_name}) {
+            return $self->_commands->{uc $cmd_name}->($self, @cmd_args);
         }
     }
 }
@@ -295,6 +293,7 @@ sub register {
 sub run {
     my ($self, $query) = @_;
 
+    # If a query was provided, process it and return immediately
     if ($query) {
         $self->process($query);
         return;
