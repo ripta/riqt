@@ -200,15 +200,19 @@ sub _build__term {
     return $t;
 }
 
-# Execute POSTBUILD on every component.
+# Execute POSTBUILD on every component. These methods should be run after
+# the controller is fully initialized, and after all triggers have run,
+# which is why it's placed here.
 sub BUILD {
     my ($self) = @_;
 
+    # Run each component's POSTBUILD method
     foreach my $name (qw/cache config db output/) {
         my $attr = $self->$name;
         $attr->POSTBUILD if $attr->can('POSTBUILD');
     }
 
+    # Register an extra exit command; the \q alias is from mysql-cli
     $self->register('exit', 'quit', '\q',
         sub {
             my ($self) = @_;
@@ -225,8 +229,10 @@ sub execute {
     return unless $self->_commands;
 
     if (exists $self->_commands->{uc $command}) {
+        # Try out the command as a whole first
         return $self->_commands->{uc $command}->($self);
     } else {
+        # Try the first word in the command
         my ($cmd_name, @cmd_args) = split /\s+/, $command;
         if (exists $self->_commands->{uc $cmd_name}) {
             return $self->_commands->{uc $cmd_name}->($self, @cmd_args);
@@ -325,16 +331,22 @@ sub run {
             next;
         }
 
+        # Process the query safely, and report back any errors; might need
+        # prettification in the future
         eval { $self->process($query) };
         $self->output->error($@) if $@;
 
+        # Reset the prompt back, in case the last line was a continuation
         $self->output->println;
         $self->_prompt($self->db->dsn . '> ');
         $query = '';
     }
 
+    # Touch the cache (?)
+    # TODO: remove this and make it less error-prone in the future
     $self->cache->touch;
 
+    # Save back the config file
     if ($self->config->history_file) {
         my $t = $self->_term;
         if ($t->ReadLine eq 'Term::ReadLine::Gnu') {
