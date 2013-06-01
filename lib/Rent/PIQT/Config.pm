@@ -11,8 +11,6 @@ sub AUTOLOAD {
     my $name = lc $AUTOLOAD;    # Normalize the method name by lower-casing it,
     $name =~ s/.*:://;          # and removing its package
 
-    $self->{'kv'} ||= { };
-
     if (scalar(@args) == 0) {
         return exists($self->{'kv'}->{$name}) ? $self->{'kv'}->{$name} : undef;
     } elsif (scalar(@args) == 1) {
@@ -21,6 +19,17 @@ sub AUTOLOAD {
             $value = 1;
         } elsif (uc $value eq 'OFF') {
             $value = 0;
+        }
+
+        if (exists $self->{'hooks'}->{$name} && ref $self->{'hooks'}->{$name} eq 'ARRAY') {
+            foreach my $hook (@{ $self->{'hooks'}->{$name} }) {
+                $hook->(
+                    $self,
+                    $name,
+                    exists($self->{'kv'}->{$name}) ? $self->{'kv'}->{$name} : undef,
+                    $value,
+                );
+            }
         }
 
         $self->{'kv'}->{$name} = $value;
@@ -32,6 +41,13 @@ sub AUTOLOAD {
             $name,
         );
     }
+}
+
+sub BUILD {
+    my ($self) = @_;
+
+    $self->{'kv'}    ||= { };
+    $self->{'hooks'} ||= { };
 }
 
 sub KEYS {
@@ -89,6 +105,14 @@ sub POSTBUILD {
             return 1;
         }
     );
+}
+
+sub register {
+    my ($self, $command, $hook) = @_;
+    $command = lc $command;
+
+    $self->{'hooks'}->{$command} ||= [ ];
+    push @{ $self->{'hooks'}->{$command} }, $hook;
 }
 
 1;
