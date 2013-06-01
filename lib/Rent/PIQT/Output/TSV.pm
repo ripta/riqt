@@ -8,7 +8,7 @@ with 'Rent::PIQT::Output';
 
 sub start {
     my ($self, $fields) = @_;
-    $self->out->print(join("\t", map { backslash($_{'name'}) } @$fields) . "\n");
+    $self->out->print(join("\t", map { backslash($_->{'name'}) } @$fields) . "\n");
 }
 
 sub finish {
