@@ -39,7 +39,12 @@ sub _search_and_instantiate_under {
 sub _search_under {
     my ($base, $klass) = @_;
 
-    my @permutations = (
+    my %seen = ();
+    my @permutations = grep {
+        $seen{$_}++ == 0
+    } map {
+        $base . '::' . $_
+    } (
         $klass,
         ucfirst($klass),
         join('', map { ucfirst $_ } split(/(?<=[A-Za-z])_(?=[A-Za-z])|\b/, $klass)),
@@ -48,7 +53,7 @@ sub _search_under {
 
     my ($success, $error);
     local $Carp::CarpLevel = $Carp::CarpLevel + 2;
-    foreach my $klass_name (map { $base . '::' . $_ } @permutations) {
+    foreach my $klass_name (@permutations) {
         ($success, $error) = try_load_class($klass_name);
         return $klass_name if $success;
         Carp::croak($error) if $error && $error !~ m/^Can't locate/;
