@@ -30,6 +30,7 @@ sub BUILDARGS {
 
 sub DEMOLISH {
     my ($self) = @_;
+    return unless $self->controller;
     foreach my $key (keys %{$self->{'kv'}}) {
         $self->controller->output->debugf("SET %s %s", $key, $self->{'kv'}->{$key});
     }
