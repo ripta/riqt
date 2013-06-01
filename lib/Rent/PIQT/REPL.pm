@@ -290,10 +290,17 @@ sub register {
     }
 }
 
-# The main loop of the REPL, which handles all four stages.
+# The main loop of the REPL, which handles all four stages, with the option
+# to run a single query, if provided.
 sub run {
-    my ($self) = @_;
-    my $query = '';
+    my ($self, $query) = @_;
+
+    if ($query) {
+        $self->process($query);
+        return;
+    }
+
+    $query ||= '';
 
     # Set the default prompt to the database's data source name
     $self->_prompt($self->db->dsn . '> ');

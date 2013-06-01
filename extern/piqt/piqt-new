@@ -61,10 +61,10 @@ do {
     }
 };
 
-# Handle auto-connect flag first, and if that isn't specified, then detect for
-# SQL*PLUS-style connect string
 if ($auto_connect) {
-    # First option is to load it from Company::Config
+    # Handle auto-connect flag first. The first option is to load it from
+    # Company::Config, which we then use Company::Util to get the password
+    # from the $WEBROOT/passwords directory
     my ($load_success, $load_errstr) = try_load_class 'Company::Config';
     if ($load_success) {
         my $db_name = Company::Config::parameter('db_instance');
@@ -119,12 +119,7 @@ my $repl = Rent::PIQT::REPL->new(
 );
 
 $repl->config->verbose($sql ? $verbose || 0 : $verbose + 1);
-
-if ($sql) {
-    $repl->process($sql);
-} else {
-    $repl->run;
-}
+$repl->run($sql);
 
 exit();
 
