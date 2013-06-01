@@ -25,6 +25,8 @@ sub _build_is_interactive {
     return -t select;
 }
 
+has 'start_time', (is => 'rw');
+
 # The start and end of output. Signatures:
 #   start(\@fields)
 #       [{name => ..., type => ..., length => ...}, ...]
@@ -73,6 +75,11 @@ sub errorf {
     $self->error(sprintf($msg, @args));
 }
 
+sub finish_timing {
+    my ($self) = @_;
+    $self->reset_timing;
+}
+
 sub info {
     my ($self, $msg) = @_;
     return unless $self->controller->config->verbose;
@@ -111,6 +118,16 @@ sub printlnf {
     my ($self, $msg, @args) = @_;
     $msg ||= "";
     $self->println(sprintf($msg, @args));
+}
+
+sub reset_timing {
+    my ($self) = @_;
+    $self->start_time(undef);
+}
+
+sub start_timing {
+    my ($self) = @_;
+    $self->start_time([ gettimeofday ]);
 }
 
 sub warn {

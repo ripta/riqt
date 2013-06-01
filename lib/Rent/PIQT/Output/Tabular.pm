@@ -10,12 +10,9 @@ has 'fields', (is => 'rw');
 has 'field_sizes', (is => 'rw');
 has 'records', (is => 'rw');
 
-has 'start_time', (is => 'rw');
-
 sub start {
     my ($self, $fields) = @_;
 
-    $self->start_time([ gettimeofday ]);
     $self->fields([ @$fields ]);
     $self->records([ ]);
 
@@ -48,9 +45,14 @@ sub finish {
         $self->printlnf($fmt_string, map { $_ || '(null)' } @$record);
     }
 
-    $self->infof("%d rows affected (%.2f seconds)",
-        scalar(@{ $self->records }),
-        tv_interval($self->start_time)
+}
+
+sub finish_timing {
+    my ($self, $rows_affected) = @_;
+    $self->infof("%d %s affected in %d ms",
+        $rows_affected,
+        $rows_affected == 1 ? 'row' : 'rows',
+        int(tv_interval($self->start_time) * 1000),
     ) if $self->start_time;
 }
 
