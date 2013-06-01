@@ -2,17 +2,18 @@ package Rent::PIQT::Output;
 
 use Moo::Role;
 use Term::ANSIColor;
+use Time::HiRes qw/gettimeofday tv_interval/;
 
 with 'Rent::PIQT::Component';
 
 has 'err' => (
     is => 'ro',
-    isa => sub { die "Attribute 'err' of 'Rent::PIQT::Output' must be an IO::Handle" unless ref $_[0] eq 'IO::Handle' },
+    isa => sub { die "Attribute 'err' of 'Rent::PIQT::Output' must be an IO::Handle" unless $_[0]->isa('IO::Handle') },
     required => 1,
 );
 has 'out' => (
     is => 'ro',
-    isa => sub { die "Attribute 'out' of 'Rent::PIQT::Output' must be an IO::Handle" unless ref $_[0] eq 'IO::Handle' },
+    isa => sub { die "Attribute 'out' of 'Rent::PIQT::Output' must be an IO::Handle" unless $_[0]->isa('IO::Handle') },
     required => 1,
 );
 
