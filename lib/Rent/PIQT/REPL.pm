@@ -343,23 +343,31 @@ sub run {
 
     # Loop until we're told to exit
     while (!$self->_done) {
-        # Read a single line from the terminal
         $query ||= '';
-        $query .= $self->_term->readline($self->_prompt);
-        last unless defined $query;
 
-        # Skip any blank lines and any internal commands correctly handled
-        if ($query =~ /^\s*$/s || $self->execute($query)) {
-            $self->output->println;
-            $query = '';
-            next;
-        }
+        # Read a single line from the terminal
+        my $line = $self->_term->readline($self->_prompt);
+        last unless defined $line;
 
-        # Display a continuation prompt if the query isn't already complete
-        unless ($self->db->query_is_complete($query)) {
-            $self->_prompt('+> ');
-            $query .= ' ';
-            next;
+        # If the last line is '/', then re-execute the buffer, which means
+        # we need to skip appending to the query and checking for internal
+        # command execution
+        if ($line ne '/') {
+            $query .= $line;
+
+            # Skip any blank lines and any internal commands correctly handled
+            if ($query =~ /^\s*$/s || $self->execute($query)) {
+                $self->output->println;
+                $query = '';
+                next;
+            }
+
+            # Display a continuation prompt if the query isn't already complete
+            unless ($self->db->query_is_complete($query)) {
+                $self->_prompt('+> ');
+                $query .= "\n";
+                next;
+            }
         }
 
         # Process the query safely, and report back any errors; might need
