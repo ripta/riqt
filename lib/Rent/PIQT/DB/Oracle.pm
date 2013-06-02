@@ -72,6 +72,8 @@ sub query_is_plsql_block {
 
 sub sanitize {
     my ($self, $query) = @_;
+    return $query if $self->query_is_plsql_block($query);
+
     $query =~ s#[;/]\s*$##g;
     return $query;
 }
