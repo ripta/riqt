@@ -48,6 +48,102 @@ sub commit {
     return $self->driver->commit ? 1 : 0;
 }
 
+sub describe_object {
+    my ($self, $name) = @_;
+    my $o = $self->controller->output;
+
+    my $s = $self->driver->prepare("SELECT * FROM $name WHERE 1=2");
+    unless ($s) {
+        $o->errorf("Cannot DESCRIBE %s: %s",
+            $name,
+            $self->driver->errstr,
+        );
+        return;
+    }
+
+    unless ($s->execute) {
+        $o->errorf("Cannot DESCRIBE %s: %s",
+            $name,
+            $s->errstr,
+        );
+        return;
+    }
+
+    my ($names, $types, $precs, $scale, $nulls);
+    eval {
+        $names = $s->{'NAME'};
+        $types = $s->{'TYPE'};
+        $precs = $s->{'PRECISION'};
+        $scale = $s->{'SCALE'};
+        $nulls = $s->{'NULLABLE'};
+    };
+    if ($@) {
+        $o->error($@);
+        return;
+    }
+
+    my @infos = ();
+    for (my $i = 0; $i < scalar @$names; $i++) {
+        my $info = {
+            name => $names->[$i],
+        };
+
+        my $rtype = ($self->driver->type_info($types->[$i]))[0];
+        if ($rtype) {
+            # Don't check for $rtype->{'NULLABLE'}, which just indicates whether
+            # the type itself supports a NULL value or not
+            $info->{'null_id'}      = $nulls->[$i] || 0;
+            $info->{'type_id'}      = $rtype->{'DATA_TYPE'};
+            $info->{'unsigned_id'}  = $rtype->{'UNSIGNED_ATTRIBUTE'} || 0;
+            $info->{'auto_unique'}  = $rtype->{'AUTO_UNIQUE_VALUE'} || 0;
+            $info->{'params'}       = $rtype->{'CREATE_PARAMS'};
+        } else {
+            $info->{'null_id'}      = $nulls->[$i] || 0;
+            $info->{'type_id'}      = $types->[$i];
+            $info->{'unsigned_id'}  = 0;
+            $info->{'auto_unique'}  = 0;
+            $info->{'params'}       = undef;
+        }
+
+        $info->{'unsigned'} = $info->{'unsigned_id'} ? 'UNSIGNED' : '';
+
+        if ($info->{'null_id'} == 0) {
+            $info->{'null'} = 'NOT NULL';
+        } elsif ($info->{'null_id'} == 1) {
+            $info->{'null'} = 'NULL';
+        } else {
+            $info->{'null'} = '';
+        }
+
+        $info->{'type'} = $rtype->{'LOCAL_TYPE_NAME'} || $rtype->{'TYPE_NAME'} || 'UNKNOWN(' . $info->{'type_id'} . ')';
+        if ($info->{'type'} =~ m/unknown|date|long/i) {
+            $info->{'precision'} = $rtype->{'COLUMN_SIZE'} || $precs->[$i];
+            $info->{'scale'} = $scale->[$i] || undef;
+        } elsif ($info->{'type'} =~ m/char/i) {
+            $info->{'precision'} = $precs->[$i];
+            $info->{'scale'} = $scale->[$i] || undef;
+        } else {
+            $info->{'precision'} = $precs->[$i];
+            $info->{'scale'} = $scale->[$i];
+        }
+
+        if (defined($info->{'precision'})) {
+            if (defined($info->{'scale'})) {
+                $info->{'precision_scale'} = sprintf('(%d, %d)', $info->{'precision'}, $info->{'scale'});
+            } else {
+                $info->{'precision_scale'} = sprintf('(%d)', $info->{'precision'});
+            }
+        } else {
+            $info->{'precision_scale'} = '';
+        }
+
+        push @infos, $info;
+    }
+
+    $s->finish();
+    return @infos;
+}
+
 # disconnect() => 0 | 1
 sub disconnect {
     my ($self) = @_;

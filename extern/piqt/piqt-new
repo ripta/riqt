@@ -156,6 +156,7 @@ my $repl = Rent::PIQT::REPL->new(
     output => [$format, {out => $output_fh, err => $error_fh}],
 );
 
+$repl->load_plugin('DescribeObject');
 $repl->load_plugin('Transactional');
 
 $repl->config->verbose($sql ? $verbose || 0 : $verbose + 1);
