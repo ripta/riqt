@@ -355,9 +355,21 @@ sub run {
         if ($line ne '/') {
             $query .= $line;
 
-            # Skip any blank lines and any internal commands correctly handled
-            if ($query =~ /^\s*$/s || $self->execute($query)) {
+            # Skip any blank lines
+            if ($query =~ /^\s*$/s) {
                 $self->output->println;
+                $query = '';
+                next;
+            }
+
+            # Skip any internal commands correctly handled
+            if (eval { $self->execute($query) }) {
+                $self->output->println;
+                $query = '';
+                next;
+            }
+            if ($@) {
+                $self->output->error($@);
                 $query = '';
                 next;
             }
