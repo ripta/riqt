@@ -54,12 +54,16 @@ sub _search_under {
     my ($success, $error);
     local $Carp::CarpLevel = $Carp::CarpLevel + 2;
     foreach my $klass_name (@permutations) {
+        my $klass_file = $klass_name;
+        $klass_file =~ s#::#/#g;
+
         ($success, $error) = try_load_class($klass_name);
+        # print $success ? "OK: $klass_name\n" : "ERROR: $error\n";
         return $klass_name if $success;
-        Carp::croak($error) if $error && $error !~ m/^Can't locate/;
+        Carp::croak($error) if $error && $error !~ m/^Can't locate $klass_file/;
     }
 
-    Carp::croak("Cannot locate any of " . join(', ', @permutations));
+    Carp::croak("Cannot find '" . $klass . "' under '" . $base . "'; tried: " . join(', ', @permutations));
 }
 
 # Reference to cache handler. Required, defaults to memory cache.
