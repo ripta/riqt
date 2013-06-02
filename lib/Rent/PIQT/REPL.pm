@@ -240,6 +240,33 @@ sub execute {
     }
 }
 
+# Load a plugin and install it dynamically.
+sub load_plugin {
+    my ($self, $plugin_name) = @_;
+    my $plugin = undef;
+
+    if ($plugin_name =~ /::/) {
+        $plugin_name =~ s/^:://;
+        $plugin = eval {
+            my ($load_success, $load_error) = try_load_class($plugin_name);
+            die $load_error unless $load_success;
+            $plugin_name;
+        };
+    } else {
+        $plugin = eval { _search_under('Rent::PIQT::Plugin', $plugin_name) };
+    }
+
+    if ($plugin) {
+        $self->output->debugf("Loaded %s", $plugin);
+        $plugin->new(controller => $self);
+    } else {
+        $self->output->errorf("Cannot load plugin '%s':\n\t%s",
+            $plugin_name,
+            $@ || 'unknown error in ' . __PACKAGE__ . ' line ' . __LINE__,
+        );
+    }
+}
+
 # Process a line of SQL.
 sub process {
     my ($self, $query) = @_;
