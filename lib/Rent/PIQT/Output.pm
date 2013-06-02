@@ -137,6 +137,20 @@ sub infof {
     $self->info(sprintf($msg, @args));
 }
 
+sub ok {
+    my ($self, $msg) = @_;
+
+    $msg ||= "";
+    $msg .= "\n";
+    $self->err->print($self->colorize($msg, "green"));
+}
+
+sub okf {
+    my ($self, $msg, @args) = @_;
+    $msg ||= "";
+    $self->ok(sprintf($msg, @args));
+}
+
 sub print {
     my ($self, $msg) = @_;
     $msg ||= "";
