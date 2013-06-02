@@ -43,6 +43,11 @@ sub DEMOLISH {
     $self->disconnect;
 }
 
+sub commit {
+    my ($self) = @_;
+    return $self->driver->commit ? 1 : 0;
+}
+
 # disconnect() => 0 | 1
 sub disconnect {
     my ($self) = @_;
@@ -148,6 +153,11 @@ sub prepare {
 # query_is_complete($self, $query) => 0 | 1
 sub query_is_complete {
     return 1;
+}
+
+sub rollback {
+    my ($self) = @_;
+    return $self->driver->rollback ? 1 : 0;
 }
 
 # rows_affected() => undef | Int
