@@ -154,8 +154,8 @@ sub disconnect {
 sub dsn {
     my ($self) = @_;
     return $self->username
-            ? sprintf('%s@%s', $self->username, $self->database)
-            : $self->database;
+            ? sprintf('%s@%s', lc $self->username, lc $self->database)
+            : lc $self->database;
     # my $class = ref $self;
     # $class =~ s/.*:://;
     # return $self->username ?
