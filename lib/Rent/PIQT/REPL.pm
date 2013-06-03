@@ -98,6 +98,7 @@ has 'db' => (
         my ($klass, @args);
         if (ref $val eq 'ARRAY') {
             ($klass, @args) = @$val;
+            @args = { @args } if scalar(@args) % 2 == 0;
         } elsif ($val =~ m{^([^:]+)://([^\?]+)(\?(.+))?$}) {
             $klass = $1;
 
@@ -106,7 +107,7 @@ has 'db' => (
             $q{'database'} = $2;
             (@args) = (\%q);
         } else {
-            die "unknown database format '$val'";
+            die "unknown database connection string '$val'";
         }
         return unless $klass;
 
