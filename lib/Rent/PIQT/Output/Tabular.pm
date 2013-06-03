@@ -42,7 +42,7 @@ sub finish {
     $self->printlnf($fmt_string, map { $_->{'name'} } @{ $self->fields });
     $self->printlnf($fmt_string, @seps);
     foreach my $record (@{$self->records}) {
-        $self->printlnf($fmt_string, map { $_ || '(null)' } @$record);
+        $self->printlnf($fmt_string, map { defined($_) ? $_ : '(null)' } @$record);
     }
 
 }

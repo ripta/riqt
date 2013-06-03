@@ -30,7 +30,7 @@ sub record {
         my $field = $fields->[$idx];
         my $value = $values->[$idx];
 
-        $self->printf($self->{'_fmt'}, $field->{'name'}, $value || '(null)');
+        $self->printf($self->{'_fmt'}, $field->{'name'}, defined($value) ? $value : '(null)');
     }
     $self->println;
 }
