@@ -400,6 +400,7 @@ sub run {
     # Touch the cache (?)
     # TODO: remove this and make it less error-prone in the future
     $self->cache->touch;
+    $self->cache->save;
 
     # Save back the config file
     if ($self->config->history_file) {

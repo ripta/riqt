@@ -47,11 +47,11 @@ sub BUILDARGS {
     };
 }
 
-sub save {
-    my ($self) = @_;
+around save => sub {
+    my ($orig, $self) = @_;
+    $self->$orig;
     nstore $self->{'kv'}, $self->filename if $self->{'kv'};
     # print "Saved (", join(', ', keys %{$self->{'kv'}}), ") into ", $self->filename, "\n";
 };
-
 
 1;
