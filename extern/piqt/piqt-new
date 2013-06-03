@@ -132,7 +132,7 @@ if ($auto_connect) {
         print STDERR "Specify --help for more options\n";
         exit(5);
     }
-} elsif ($connect_string =~ m{^([^/]+)/([^@])@.+$}) {
+} elsif ($connect_string =~ m{^([^/]+)/([^@])@(.+)$}) {
     $connect_string = sprintf(
         'oracle://%s?username=%s&password=%s',
         $3,
