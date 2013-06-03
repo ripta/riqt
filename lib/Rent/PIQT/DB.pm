@@ -222,6 +222,18 @@ sub name_completion {
     return ();
 }
 
+sub object_names {
+    my ($self) = @_;
+
+    my $sth = $self->driver->table_info;
+    return unless $sth;
+
+    my $tables = $sth->fetchall_arrayref;
+    return unless $tables;
+
+    return [map { {type => $_->[3], schema => $_->[1], name => $_->[2]} } @$tables];
+}
+
 sub prepare {
     my ($self, $query) = @_;
     $self->last_query($query) if $query;
