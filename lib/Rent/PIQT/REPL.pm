@@ -93,7 +93,7 @@ has 'db' => (
     coerce => sub {
         my ($val) = @_;
         return unless $val;
-        return $val if ref $val && $val->does('Rent::PIQT::DB');
+        return $val if ref $val && UNIVERSAL::isa($val, 'Rent::PIQT::DB');
 
         my ($klass, @args);
         if (ref $val eq 'ARRAY') {
