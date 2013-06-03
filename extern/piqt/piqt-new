@@ -139,6 +139,25 @@ if ($auto_connect) {
         $1,
         $2,
     );
+} elsif ($connect_string =~ m{^([^@]+)@(.+)$}) {
+    my ($db_user, $db_name) = ($1, $2);
+    $connect_string = sprintf(
+        'oracle://%s?username=%s',
+        $db_name,
+        $db_user,
+    );
+
+    if (try_load_class('Company::Util')) {
+        my $db_pass = Company::Util::get_password(
+            resource => sprintf('oracle:%s@%s', lc $db_user, lc $db_name),
+            noprompt => 1,
+        );
+        $connect_string = ['oracle',
+            database => $db_name,
+            username => $db_user,
+            password => $db_pass,
+        ];
+    }
 }
 
 # Get the SQL query from the command line; the @rest might be used for
