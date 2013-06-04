@@ -7,7 +7,7 @@ with 'Rent::PIQT::Plugin';
 sub BUILD {
     my ($self) = @_;
 
-    $self->controller->register('commit', 'commit;',
+    $self->controller->register('commit',
         sub {
             my ($ctrl) = @_;
             if ($ctrl->db->commit) {
@@ -20,7 +20,7 @@ sub BUILD {
         },
     );
 
-    $self->controller->register('rollback', 'rollback;',
+    $self->controller->register('rollback',
         sub {
             my ($ctrl) = @_;
             if ($ctrl->db->rollback) {

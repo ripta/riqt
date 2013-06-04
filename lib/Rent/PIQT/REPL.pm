@@ -236,6 +236,7 @@ sub execute {
     my ($self, $command) = @_;
     return unless $self->_commands;
 
+    $command =~ s/;$//;
     if (exists $self->_commands->{uc $command}) {
         # Try out the command as a whole first
         return $self->_commands->{uc $command}->($self);
