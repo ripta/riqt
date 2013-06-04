@@ -13,7 +13,8 @@ sub _build_key {
     return $key if $key =~ m#^/#;
     return '/' . $key unless $self->namespace;
 
-    return $self->namespace . '/' . $key;
+    return $self->namespace . '/' . $key if $self->namespace =~ m#^/#;
+    return '/' . $self->namespace . '/' . $key;
 }
 
 sub BUILD {
