@@ -60,7 +60,10 @@ around describe_object => sub {
     my @infos = $self->$orig($name);
     return unless @infos;
     return map {
-        $_->{'type'} = ($_->{'type_id'} == -2 ? 'RAW' : $_->{'type'}) . $_->{'precision_scale'};
+        $_->{'type'} = 'RAW' if $_->{'type_id'} == -2;
+        $_->{'type'} = 'XMLTYPE' if $_->{'type_id'} == -9108;
+
+        $_->{'type'} = $_->{'type'} . $_->{'precision_scale'};
         $_
     } @infos;
 
