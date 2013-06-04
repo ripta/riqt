@@ -69,7 +69,7 @@ around POSTBUILD => sub {
 
         next if $line =~ m{^\s*#};
 
-        if ($line =~ m{^\s*SET\s+(\S+)\s+(.+?)(#.*)?$}i) {
+        if ($line =~ m{^\s*SET\s+(\S+)\s+(.+?)(\#.*)?$}i) {
             $self->$1($2);
             next;
         }
