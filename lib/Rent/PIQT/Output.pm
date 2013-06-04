@@ -114,11 +114,21 @@ sub errorf {
 
 sub finish_timing {
     my ($self, $rows_affected) = @_;
-    $self->infof("%d %s affected in %d ms",
-        $rows_affected,
-        $rows_affected == 1 ? 'row' : 'rows',
-        int(tv_interval($self->start_time) * 1000),
-    ) if $self->start_time;
+    return unless $self->start_time;
+
+    if (defined $rows_affected) {
+        $self->infof("%d %s affected in %d ms",
+            $rows_affected,
+            $rows_affected == 1 ? 'row' : 'rows',
+            int(tv_interval($self->start_time) * 1000),
+        );
+    } else {
+        $self->infof("Completed in %d ms",
+            int(tv_interval($self->start_time) * 1000),
+        );
+    }
+
+    $self->reset_timing;
 }
 
 sub info {
