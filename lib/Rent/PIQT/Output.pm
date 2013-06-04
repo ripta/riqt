@@ -51,6 +51,7 @@ sub BUILDARGS {
 
 sub POSTBUILD {
     my ($self) = @_;
+
     $self->controller->config->register('mode',
         sub {
             my ($config, $name, $old_value, $new_value) = @_;

@@ -49,6 +49,9 @@ sub _search_under {
         ucfirst($klass),
         join('', map { ucfirst $_ } split(/(?<=[A-Za-z])_(?=[A-Za-z])|\b/, $klass)),
         uc($klass),
+        lc($klass),
+        ucfirst(lc($klass)),
+        join('', map { ucfirst lc $_ } split(/(?<=[A-Za-z])_(?=[A-Za-z])|\b/, $klass)),
     );
 
     my ($success, $error);
