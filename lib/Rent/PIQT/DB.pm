@@ -153,8 +153,8 @@ sub describe_object {
             $info->{'scale'} = $scale->[$i];
         }
 
-        if (defined($info->{'precision'})) {
-            if (defined($info->{'scale'})) {
+        if ($info->{'precision'}) {
+            if ($info->{'scale'}) {
                 $info->{'precision_scale'} = sprintf('(%d, %d)', $info->{'precision'}, $info->{'scale'});
             } else {
                 $info->{'precision_scale'} = sprintf('(%d)', $info->{'precision'});
