@@ -37,15 +37,22 @@ around POSTBUILD => sub {
     my ($orig, $self) = @_;
     $self->$orig;
 
-    return unless $self->driver;
+    $self->controller->config->register('date_format',
+        sub {
+            my ($config, $name, $old_value, $new_value) = @_;
 
-    my $date_fmt = $self->controller->config->date_format;
-    $date_fmt ||= $self->controller->config->full_dates
-            ? 'DD-MON-YYYY HH24:MI:SS'
-            : 'DD-MON-YYYY';
+            return unless $self->driver;
+            $self->driver->do("ALTER SESSION SET NLS_DATE_FORMAT = '" . $new_value ."'");
+            $self->controller->output->okf("Session has been altered to format dates as '%s'", $new_value);
+        },
+    );
 
-    $self->controller->output->infof("Date format is '%s'", $date_fmt);
-    $self->driver->do("ALTER SESSION SET NLS_DATE_FORMAT = '" . $date_fmt ."'");
+    $self->controller->config->register('full_dates',
+        sub {
+            my ($config, $name, $old_value, $new_value) = @_;
+            $config->date_format($new_value ? 'DD-MON-YYYY HH24:MI:SS' : 'DD-MON-YYYY');
+        },
+    );
 };
 
 around describe_object => sub {
