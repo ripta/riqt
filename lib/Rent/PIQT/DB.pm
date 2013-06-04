@@ -43,6 +43,32 @@ sub DEMOLISH {
     $self->disconnect;
 }
 
+sub POSTBUILD {
+    my ($self) = @_;
+
+    $self->controller->register('load',
+        sub {
+            my ($ctrl) = @_;
+            $ctrl->output->info("Caching object names for tab completion...");
+
+            $ctrl->output->start_timing;
+            if (my $objects = $self->object_names) {
+                $ctrl->cache->set('object_names', $objects);
+                $ctrl->cache->set('object_ts',    time);
+                $ctrl->output->okf("Loaded %d objects into cache", scalar(@{ $ctrl->cache->get('object_names') }));
+                $ctrl->output->finish_timing;
+            } else {
+                $ctrl->output->errorf("Could not load objects: %s",
+                    $self->last_error || 'unknown error',
+                );
+                $ctrl->output->reset_timing;
+            }
+
+            return 1;
+        },
+    );
+}
+
 sub commit {
     my ($self) = @_;
     return $self->driver->commit ? 1 : 0;

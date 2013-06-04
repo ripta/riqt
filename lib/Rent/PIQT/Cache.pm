@@ -24,26 +24,7 @@ sub BUILD {
 
 sub POSTBUILD {
     my ($self) = @_;
-
     $self->namespace($self->controller->db->dsn);
-    $self->controller->register('load', 'load;',
-        sub {
-            my ($ctrl) = @_;
-            $ctrl->output->info("Caching object names for tab completion...");
-
-            if (my $objects = $ctrl->db->object_names) {
-                $ctrl->cache->set('object_names', $objects);
-                $ctrl->cache->set('object_ts',    time);
-                $ctrl->output->okf("Loaded %d objects into cache", scalar(@{ $ctrl->cache->get('object_names') }));
-            } else {
-                $ctrl->output->errorf("Could not load objects: %s",
-                    $ctrl->db->last_error || 'unknown error',
-                );
-            }
-
-            return 1;
-        },
-    );
 }
 
 # delete($self, $key)

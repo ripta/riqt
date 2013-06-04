@@ -33,8 +33,10 @@ sub BUILDARGS {
     };
 }
 
-sub POSTBUILD {
-    my ($self) = @_;
+around POSTBUILD => sub {
+    my ($orig, $self) = @_;
+    $self->$orig;
+
     return unless $self->driver;
 
     my $date_fmt = $self->controller->config->date_format;
@@ -44,7 +46,7 @@ sub POSTBUILD {
 
     $self->controller->output->infof("Date format is '%s'", $date_fmt);
     $self->driver->do("ALTER SESSION SET NLS_DATE_FORMAT = '" . $date_fmt ."'");
-}
+};
 
 around describe_object => sub {
     my ($orig, $self, $name) = @_;
