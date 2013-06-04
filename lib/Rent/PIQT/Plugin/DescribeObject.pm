@@ -1,5 +1,6 @@
 package Rent::PIQT::Plugin::DescribeObject;
 
+use List::Util qw/max/;
 use Moo;
 
 with 'Rent::PIQT::Plugin';
