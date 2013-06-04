@@ -245,7 +245,42 @@ sub is_select {
 }
 
 sub name_completion {
-    return ();
+    my ($self, $text, $line, $char) = @_;
+    my $c = $self->controller->cache;
+    my $o = $self->controller->output;
+
+    my @words;
+
+    $o->debugf("Tab completion (at line %s, char %s) with input '%s'", $line, $char, $text);
+    if ($line =~ /^@/) {
+        # $TERM->Attribs->{'completion_suppress_append'} = 1;
+        push @words, map { -d $_ ? "$_/" : $_ } glob("$text*");
+    } else {
+        # $TERM->Attribs->{'completion_suppress_append'} = 0;
+        my @candidates = ();
+        if ($char == 0) {
+            push @candidates,
+                    qw( select insert update delete create drop ),
+                    qw( begin declare ),
+                    qw( ed vi ! @ );
+        } elsif (my $names = $c->get('object_names')) {
+            @candidates = sort map { lc $_->{'name'} } @$names;
+        } else {
+            $o->warn("Tab completion not available, because the object cache is not loaded yet.");
+            $o->warn("Object cache can be primed by running 'load'.");
+        }
+
+        foreach my $word (@candidates) {
+            push @words, $word if $word eq lc $text;
+        }
+
+        foreach my $word (@candidates) {
+            push @words, $word if $word ne $text && $word =~ m/^\Q$text\E/i;
+        }
+    }
+
+    @words = map { s/^\Q$text\E/$text/i; $_ } @words;
+    return @words;
 }
 
 sub object_names {
