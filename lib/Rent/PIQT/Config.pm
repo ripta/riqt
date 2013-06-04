@@ -4,6 +4,8 @@ use Moo;
 
 with 'Rent::PIQT::Component';
 
+has 'is_modified' => (is => 'rw', 'default' => 0);
+
 sub AUTOLOAD {
     my ($self, @args) = @_;
 
@@ -37,6 +39,7 @@ sub AUTOLOAD {
         }
 
         $self->{'kv'}->{$name} = $value;
+        $self->is_modified(1);
         return 1;
     } else {
         $self->controller->output->errorf(

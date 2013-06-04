@@ -30,10 +30,21 @@ sub BUILDARGS {
 
 sub DEMOLISH {
     my ($self) = @_;
-    return unless $self->controller;
+    return 1 unless $self->is_modified;
+
+    open my $fh, $self->filename or do {
+        warn "Cannot save configuration into " . $self->filename . ": " . $!;
+        return;
+    };
+
+    print { $fh } "# Last-Modified: " . time() . "\n";
     foreach my $key (keys %{$self->{'kv'}}) {
-        $self->controller->output->debugf("SET %s %s", $key, $self->{'kv'}->{$key});
+        printf { $fh } "SET %s %s\n", $key, $self->{'kv'}->{$key};
+        $self->controller->output->debugf("SET %s %s", $key, $self->{'kv'}->{$key}) if $self->controller;
     }
+
+    close $fh;
+    return 1;
 }
 
 around POSTBUILD => sub {
