@@ -21,15 +21,19 @@ sub AUTOLOAD {
             $value = 0;
         }
 
+        my @hook_args = (
+            $self,
+            $name,
+            exists($self->{'kv'}->{$name}) ? $self->{'kv'}->{$name} : undef,
+            $value,
+        );
+
         if (exists $self->{'hooks'}->{$name} && ref $self->{'hooks'}->{$name} eq 'ARRAY') {
             foreach my $hook (@{ $self->{'hooks'}->{$name} }) {
-                $hook->(
-                    $self,
-                    $name,
-                    exists($self->{'kv'}->{$name}) ? $self->{'kv'}->{$name} : undef,
-                    $value,
-                );
+                $hook->(@hook_args);
             }
+        } else {
+            $self->{'pending_hooks'}->{$name} = \@hook_args;
         }
 
         $self->{'kv'}->{$name} = $value;
@@ -46,8 +50,9 @@ sub AUTOLOAD {
 sub BUILD {
     my ($self) = @_;
 
-    $self->{'kv'}    ||= { };
-    $self->{'hooks'} ||= { };
+    $self->{'kv'}               ||= { };
+    $self->{'hooks'}            ||= { };
+    $self->{'pending_hooks'}    ||= { };
 }
 
 sub KEYS {
@@ -113,6 +118,25 @@ sub register {
 
     $self->{'hooks'}->{$command} ||= [ ];
     push @{ $self->{'hooks'}->{$command} }, $hook;
+
+    $self->run_pending_hooks;
+}
+
+sub run_pending_hooks {
+    my ($self) = @_;
+
+    foreach my $name (keys %{$self->{'pending_hooks'}}) {
+        my $args = $self->{'pending_hooks'}->{$name};
+        if (exists $self->{'hooks'}->{$name} && ref $self->{'hooks'}->{$name} eq 'ARRAY') {
+            foreach my $hook (@{ $self->{'hooks'}->{$name} }) {
+                $hook->(@$args);
+            }
+
+            delete $self->{'pending_hooks'}->{$name};
+        }
+    }
+
+    return 1;
 }
 
 1;
