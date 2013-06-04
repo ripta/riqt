@@ -64,6 +64,7 @@ sub KEYS {
 
 sub POSTBUILD {
     my ($self) = @_;
+    $self->run_pending_hooks;
 
     $self->controller->register('set',
         sub {
