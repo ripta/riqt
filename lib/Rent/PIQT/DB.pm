@@ -304,8 +304,9 @@ sub prepare {
 
     $query ||= $self->last_query;
 
-    if ($self->controller->config->echo) {
-        $self->controller->output->infof("Query: %s", $self->last_query);
+    unless ($query) {
+        $self->controller->output->error('Execution buffer is empty. Please specify a query or PL/SQL block to execute.');
+        return 0;
     }
 
     my $sth = $self->driver->prepare($query);

@@ -288,11 +288,13 @@ sub process {
 
     # Prepare and execute the query
     $self->output->start_timing;
-    if ($self->db->prepare($query) && $self->db->execute) {
+    if ($self->db->prepare($query, save_query => 1) && $self->db->execute) {
+        $self->output->infof("Query: %s", $query) if $self->config->echo;
+
         # Only show a result set if the query produces a result set
         my $row_num = 0;
         if ($self->db->has_result_set) {
-            my $limit   = $self->config->limit || $self->config->deflimit || 0;
+            my $limit = $self->config->limit || $self->config->deflimit || 0;
 
             # Output a header and each record
             $self->output->start($self->db->field_prototypes);
