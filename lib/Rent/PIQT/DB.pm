@@ -213,10 +213,11 @@ sub fetch_hash {
 
 sub field_prototypes {
     my ($self) = @_;
-    return unless $self->statement;
+    my $sth = $self->statement;
+
+    return unless $sth;
     return unless $self->is_select;
 
-    my $sth = $self->statement;
     my $names = $sth->{'NAME_lc'};
     my $types = $sth->{'TYPE'};
     my $precs = $sth->{'PRECISION'};
@@ -239,9 +240,11 @@ sub has_result_set {
 
 sub is_select {
     my ($self) = @_;
-    return unless $self->statement;
-    return defined $self->statement->{'NUM_OF_FIELDS'}
-            && $self->statement->{'NUM_OF_FIELDS'} > 0;
+    my $sth = $self->statement;
+
+    return unless $sth;
+    return defined $sth->{'NUM_OF_FIELDS'}
+            && $sth->{'NUM_OF_FIELDS'} > 0;
 }
 
 sub name_completion {
