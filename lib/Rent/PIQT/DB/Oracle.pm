@@ -57,6 +57,70 @@ around POSTBUILD => sub {
             $config->date_format($new_value ? 'DD-MON-YYYY HH24:MI:SS' : 'DD-MON-YYYY');
         },
     );
+
+    $self->controller->register('explain',
+        sub {
+            my ($ctrl, @query) = @_;
+            my $query = join(' ', @query);
+
+            my $stmt_id = sprintf('%s:%02d%04d', $ENV{'USER'}, $$ % 100, time % 10000);
+            $ctrl->output->info("Statement will be planned as $stmt_id");
+
+            eval {
+                $self->driver->do(qq{DELETE FROM plan_table WHERE statement_id = '$stmt_id'});
+                $self->driver->do(qq{
+                    EXPLAIN PLAN
+                    SET
+                        statement_id = '$stmt_id'
+                    FOR
+                        $query
+                });
+            };
+            return $ctrl->output->error($@) if $@;
+
+            my $cost_sql = qq{
+                SELECT
+                    SUM(cost)
+                FROM
+                    plan_table
+                WHERE
+                    statement_id = '$stmt_id'
+            };
+            $ctrl->output->okf(
+                "TOTAL COST: %s",
+                $self->driver->selectrow_arrayref($cost_sql)->[0],
+            );
+
+            my $retrieve_sql = qq{
+                SELECT
+                    LPAD(' ', LEVEL - 1) || DECODE(options,
+                        NULL,
+                        operation,
+                        operation || ' (' || options || ')'
+                    ) operation,
+                    object_name,
+                    cardinality num_rows,
+                    cost
+                FROM
+                    plan_table
+                START WITH
+                    id = 0
+                AND statement_id = '$stmt_id'
+                CONNECT BY
+                    PRIOR id = parent_id
+                AND PRIOR statement_id = statement_id
+            };
+            if ($self->prepare($retrieve_sql) && $self->execute) {
+                $ctrl->output->start($self->field_prototypes);
+                while (my $row = $self->fetch_array) {
+                    $ctrl->output->record([ @$row ]);
+                }
+                $ctrl->output->finish;
+            }
+
+            return 1;
+        },
+    );
 };
 
 # Transform the output of describe_object into something more palatable, which
