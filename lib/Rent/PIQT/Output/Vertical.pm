@@ -36,3 +36,21 @@ sub record {
 }
 
 1;
+
+=head1 NAME
+
+Rent::PIQT::Output::Vertical - Vertical output driver for PIQT
+
+=head1 SYNOPSIS
+
+Each record is printed in its own block. Each field is printed on its own line.
+
+    object_id   1
+    object_tp   Property
+    name        Test property by rent.com
+
+=head1 AUTHOR
+
+Ripta Pasay <rpasay@rent.com>
+
+=cut

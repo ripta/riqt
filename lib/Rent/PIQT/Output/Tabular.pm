@@ -65,3 +65,21 @@ sub record {
 }
 
 1;
+
+=head1 NAME
+
+Rent::PIQT::Output::Tabular - Table-oriented output driver for PIQT
+
+=head1 SYNOPSIS
+
+Each record is displayed in one line. Special characters in each column is escaped.
+
+    object_id   1
+    object_tp   Property
+    name        Test property by rent.com
+
+=head1 AUTHOR
+
+Ripta Pasay <rpasay@rent.com>
+
+=cut

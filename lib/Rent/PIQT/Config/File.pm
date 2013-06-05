@@ -6,6 +6,8 @@ extends 'Rent::PIQT::Config';
 
 has 'filename' => (is => 'rw', required => 1);
 
+# Transform File->new($filename) into File->new(filename => $filename) after
+# massaging the filename into something more useful.
 sub BUILDARGS {
     my ($class, $filename) = @_;
 
@@ -28,6 +30,8 @@ sub BUILDARGS {
     };
 }
 
+# Save out the configuration file upon exit, if the configuration has been
+# modified during the session.
 sub DEMOLISH {
     my ($self) = @_;
     return 1 unless $self->is_modified;
@@ -37,6 +41,7 @@ sub DEMOLISH {
         return;
     };
 
+    # Output the configuration lines
     print { $fh } "# Last-Modified: " . time() . "\n";
     foreach my $key (keys %{$self->{'kv'}}) {
         printf { $fh } "SET %s %s\n", $key, $self->{'kv'}->{$key};
@@ -47,13 +52,17 @@ sub DEMOLISH {
     return 1;
 }
 
+# During POSTBUILD phase, any existing configuration files should be loaded
+# into memory.
 around POSTBUILD => sub {
     my ($orig, $self) = (shift, shift);
     $self->$orig(@_);
 
+    # Output a warning if the configuration file doesn't exist
     unless (-e $self->filename) {
         $self->controller->output->warnf("Configuration file '%s' does not exist.", $self->filename);
         $self->controller->output->warnf("One will be created automatically upon exiting.");
+        $self->is_modified(1);
         return;
     }
 
@@ -62,6 +71,7 @@ around POSTBUILD => sub {
         return;
     };
 
+    # Process the configuration file, looking for lines starting with 'SET'
     my $lineno = 0;
     while (my $line = <$fh>) {
         $lineno++;

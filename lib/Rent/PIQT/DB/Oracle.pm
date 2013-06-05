@@ -6,6 +6,8 @@ use Moo;
 
 with "Rent::PIQT::DB";
 
+# Lazily connect to the driver. This also disables auto-commits, and some
+# default connection parameters.
 sub _build_driver {
     my ($self) = @_;
 
@@ -23,6 +25,7 @@ sub _build_driver {
     );
 }
 
+# Transforms Oracle->new($db, $user, $pass) into Oracle->new(\%opts).
 sub BUILDARGS {
     my ($class, $database, $username, $password) = @_;
     return $database if ref $database eq 'HASH';
@@ -33,6 +36,7 @@ sub BUILDARGS {
     };
 }
 
+# Register any driver-specific configuration parameters here.
 around POSTBUILD => sub {
     my ($orig, $self) = @_;
     $self->$orig;
@@ -55,6 +59,8 @@ around POSTBUILD => sub {
     );
 };
 
+# Transform the output of describe_object into something more palatable, which
+# includes special handling of RAW columns in Oracle.
 around describe_object => sub {
     my ($orig, $self, $name) = @_;
     my @infos = $self->$orig($name);
@@ -69,6 +75,8 @@ around describe_object => sub {
 
 };
 
+# Check whether the query provided is complete or not. Query completion here
+# is defined as ending with a semicolon if the query isn't a PL/SQL block.
 sub query_is_complete {
     my ($self, $query) = @_;
 
@@ -86,6 +94,10 @@ sub query_is_complete {
     return $query =~ /;\s*/ ? 1 : 0;
 }
 
+# Check whether the query provided is a PL/SQL block. Only very specific types
+# of queries can contain PL/SQL blocks. Anonymous blocks start with BEGIN or
+# DECLARE, while named blocks have to be part of a FUNCTION, PACKAGE, PACKAGE
+# BODY, PROCEDURE, TRIGGER, or TYPE definition.
 sub query_is_plsql_block {
     my ($self, $query) = @_;
     return 1 if $query =~ /^\s*(BEGIN|DECLARE)\s+/i;
@@ -94,6 +106,8 @@ sub query_is_plsql_block {
     return 0;
 }
 
+# Sanitize the query. PL/SQL blocks are not sanitized, while single-line SQL
+# queries are sanitized by removing its trailing semicolon.
 sub sanitize {
     my ($self, $query) = @_;
     return $query if $self->query_is_plsql_block($query);
@@ -103,3 +117,22 @@ sub sanitize {
 }
 
 1;
+
+=head1 NAME
+
+Rent::PIQT::DB::Oracle - Oracle-specific database driver for PIQT
+
+=head1 SYNOPSIS
+
+    my $driver = Rent::PIQT::DB::Oracle->new(
+        database => 'VQA',
+        username => 'VIVA',
+        password => '...',
+        controller => $repl,
+    );
+
+=head1 AUTHOR
+
+Ripta Pasay <rpasay@rent.com>
+
+=cut

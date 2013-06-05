@@ -211,3 +211,18 @@ sub warnf {
 }
 
 1;
+
+=head1 NAME
+
+Rent::PIQT::Output - Base class for PIQT output drivers
+
+=head1 SYNOPSIS
+
+This class should not be initialized directly, but rather, should be subclassed
+with implementations of the methods: start, finish, and record.
+
+=head1 AUTHOR
+
+Ripta Pasay <rpasay@rent.com>
+
+=cut
