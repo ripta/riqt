@@ -114,6 +114,32 @@ around POSTBUILD => sub {
             return 1;
         },
     );
+
+    $self->controller->register('show create',
+        sub {
+            my ($ctrl, $arg) = @_;
+            $arg = uc $arg;
+
+            my ($type, $obj) = split /\s+/, $arg, 2;
+
+            my @fn_args = ();
+            if ($obj =~ m{\.}) {
+                my ($schema, $name) = split /\./, $obj;
+                @fn_args = ($type, $name, $schema);
+            } else {
+                @fn_args = ($type, $obj);
+            }
+
+            my $sql = sprintf("SELECT DBMS_METADATA.GET_DDL('%s') FROM DUAL", join("', '", @fn_args));
+            $ctrl->with_output('text',
+                sub {
+                    $self->do_and_display($ctrl->output, $sql);
+                },
+            );
+
+            return 1;
+        },
+    );
 };
 
 # Transform the output of describe_object into something more palatable, which
