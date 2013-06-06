@@ -24,7 +24,6 @@ sub _build_key {
 sub BUILD {
     my ($self) = @_;
     $self->{'kv'} ||= {};
-    # print "Loaded Cache (", join(', ', keys %{$self->{'kv'}}), ")\n";
 }
 
 # Set the namespace according to the database data source name.
@@ -37,7 +36,7 @@ sub POSTBUILD {
 sub delete {
     my ($self, $key) = @_;
     $key = $self->_build_key($key);
-    # $self->controller->output->ok("CACHE DELETE $key");
+    $self->controller->output->debug("CACHE DELETE $key");
     delete $self->{'kv'}->{$key};
 }
 
@@ -45,7 +44,7 @@ sub delete {
 sub get {
     my ($self, $key) = @_;
     $key = $self->_build_key($key);
-    # $self->controller->output->ok("CACHE GET $key");
+    $self->controller->output->debug("CACHE GET $key");
     return exists($self->{'kv'}->{$key}) ? $self->{'kv'}->{$key} : undef;
 }
 
@@ -58,14 +57,14 @@ sub save {
 sub set {
     my ($self, $key, $value) = @_;
     $key = $self->_build_key($key);
-    # $self->controller->output->ok("CACHE SET $key $value");
+    $self->controller->output->debug("CACHE SET $key $value");
     return $self->{'kv'}->{$key} = $value;
 }
 
 # Touch the cache to mark the cache as dirty.
 sub touch {
     my ($self) = @_;
-    # $self->controller->output->ok("CACHE TOUCH");
+    $self->controller->output->debug("CACHE TOUCH");
     return $self->{'kv'}->{'_touched'} = time;
 }
 

@@ -5,6 +5,7 @@ use Moo;
 use Carp;
 use Class::Load qw/try_load_class/;
 use Data::Dumper;
+use String::Escape qw/quote printable/;
 use Term::ReadLine;
 
 our $VERSION = '0.5.0';
@@ -222,7 +223,10 @@ sub BUILD {
     # Run each component's POSTBUILD method
     foreach my $name (qw/cache config db output/) {
         my $attr = $self->$name;
-        $attr->POSTBUILD if $attr->can('POSTBUILD');
+        if ($attr->can('POSTBUILD')) {
+            $self->output->debugf("Running POSTBUILD on %s->%s", $self, $name);
+            $attr->POSTBUILD;
+        }
     }
 
     # Register an extra exit command; the \q alias is from mysql-cli
@@ -243,15 +247,19 @@ sub execute {
     return unless $self->_commands;
 
     my @commands = sort { length($b) <=> length($a) } keys %{ $self->_commands };
-    #print join(",", @commands), "\n";
     my @matches = grep { $command =~ /^\Q$_\E/i } @commands;
-    #print join(",", @matches), "\n";
 
     if (scalar(@matches)) {
+        $self->output->debugf("Execute internal command");
+        $self->output->debugf("Sort-cand: %s", join(", ", @commands));
+        $self->output->debugf("Matches  : %s", join(", ", @matches));
+
         my $command_name = $matches[0];
         my $args = $command;
         $args =~ s/^\Q$command_name\E//i;
         $args =~ s/^\s+//;
+
+        $self->output->debugf("Execute  : %s(%s)", $command_name, $args ? quote(printable($args)) : '');
         return $self->_commands->{$command_name}->($self, $args);
     }
 }
@@ -273,7 +281,7 @@ sub load_plugin {
     }
 
     if ($plugin) {
-        $self->output->debugf("Loaded %s", $plugin);
+        $self->output->debugf("Loaded plugin %s", quote($plugin));
         $plugin->new(controller => $self);
     } else {
         $self->output->errorf("Cannot load plugin '%s':\n\t%s",
@@ -332,6 +340,7 @@ sub register {
 
     foreach (@args) {
         if (ref $code eq 'CODE') {
+            $self->output->debugf("Registering internal command %s => %s", quote($_), $code);
             $self->_commands->{uc($_)} = $code;
         } else {
             $self->output->warnf("Cannot register internal command '%s' to point to a %s", $_, ref($code));
@@ -346,6 +355,7 @@ sub run {
 
     # If a query was provided, process it and return immediately
     if ($query) {
+        $self->output->debugf("Running one-off query %s", quote(printable($query)));
         $self->process($query);
         return;
     }
@@ -353,6 +363,7 @@ sub run {
     $query ||= '';
 
     # Set the default prompt to the database's data source name
+    $self->output->debugf("Entering interactive mode for %s", quote($self->db->dsn));
     $self->_prompt($self->db->dsn . '> ');
 
     # Loop until we're told to exit
