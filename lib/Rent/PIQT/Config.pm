@@ -71,9 +71,10 @@ sub POSTBUILD {
 
     $self->controller->register('set',
         sub {
-            my ($self, $name, @values) = @_;
-            if (scalar @values) {
-                my $value = join(' ', @values);
+            my ($self, $arg) = @_;
+            my ($name, $value) = split /\s+/, $arg, 2;
+
+            if ($value) {
                 $name = lc $name;
                 $name =~ s/\s/_/g;
 

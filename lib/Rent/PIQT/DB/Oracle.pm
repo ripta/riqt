@@ -60,8 +60,7 @@ around POSTBUILD => sub {
 
     $self->controller->register('explain',
         sub {
-            my ($ctrl, @query) = @_;
-            my $query = join(' ', @query);
+            my ($ctrl, $query) = @_;
 
             my $stmt_id = sprintf('%s:%02d%04d', $ENV{'USER'}, $$ % 100, time % 10000);
             $ctrl->output->info("Statement will be planned as $stmt_id");
