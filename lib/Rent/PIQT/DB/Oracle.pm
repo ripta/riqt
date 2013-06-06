@@ -58,7 +58,7 @@ around POSTBUILD => sub {
         },
     );
 
-    $self->controller->register('explain',
+    $self->controller->register('explain', 'explain plan', 'explain plan for',
         sub {
             my ($ctrl, $query) = @_;
 
