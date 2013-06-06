@@ -434,4 +434,19 @@ sub version {
     return $VERSION;
 }
 
+sub with_output {
+    my ($self, $temporary, $work) = @_;
+    return unless $temporary;
+    return unless $work;
+    return unless ref $work eq 'CODE';
+
+    my $current = $self->output;
+    $self->output([$temporary, $current]);
+
+    my $retval = $work->($self->output);
+    $self->output($current);
+
+    return $retval;
+}
+
 1;
