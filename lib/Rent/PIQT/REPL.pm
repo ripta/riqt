@@ -237,18 +237,20 @@ sub BUILD {
 # Execute an internal command.
 sub execute {
     my ($self, $command) = @_;
+    $command =~ s/;$//;
     return unless $self->_commands;
 
-    $command =~ s/;$//;
-    if (exists $self->_commands->{uc $command}) {
-        # Try out the command as a whole first
-        return $self->_commands->{uc $command}->($self);
-    } else {
-        # Try the first word in the command
-        my ($cmd_name, @cmd_args) = split /\s+/, $command;
-        if (exists $self->_commands->{uc $cmd_name}) {
-            return $self->_commands->{uc $cmd_name}->($self, @cmd_args);
-        }
+    my @commands = sort { length($b) <=> length($a) } keys %{ $self->_commands };
+    #print join(",", @commands), "\n";
+    my @matches = grep { $command =~ /^\Q$_\E/i } @commands;
+    #print join(",", @matches), "\n";
+
+    if (scalar(@matches)) {
+        my $command_name = $matches[0];
+        my $args = $command;
+        $args =~ s/^\Q$command_name\E//i;
+        $args =~ s/^\s+//;
+        return $self->_commands->{$command_name}->($self, $args);
     }
 }
 
