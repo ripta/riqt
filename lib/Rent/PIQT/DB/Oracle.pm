@@ -109,13 +109,7 @@ around POSTBUILD => sub {
                     PRIOR id = parent_id
                 AND PRIOR statement_id = statement_id
             };
-            if ($self->prepare($retrieve_sql) && $self->execute) {
-                $ctrl->output->start($self->field_prototypes);
-                while (my $row = $self->fetch_array) {
-                    $ctrl->output->record([ @$row ]);
-                }
-                $ctrl->output->finish;
-            }
+            $self->do_and_display($ctrl->output, $retrieve_sql);
 
             return 1;
         },
@@ -137,6 +131,21 @@ around describe_object => sub {
     } @infos;
 
 };
+
+sub do_and_display {
+    my ($self, $output, $sql, @args) = @_;
+
+    if ($self->prepare($sql) && $self->execute(@args)) {
+        $output->start($self->field_prototypes);
+        while (my $row = $self->fetch_array) {
+            $output->record([ @$row ]);
+        }
+        $output->finish;
+        return 1;
+    }
+
+    return 0;
+}
 
 # Check whether the query provided is complete or not. Query completion here
 # is defined as ending with a semicolon if the query isn't a PL/SQL block.
