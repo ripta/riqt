@@ -293,7 +293,7 @@ sub process {
     # Prepare and execute the query
     $self->output->start_timing;
     if ($self->db->prepare($query, save_query => 1) && $self->db->execute) {
-        $self->output->infof("Query: %s", $query) if $self->config->echo;
+        $self->output->infof("Query: %s", $query) if $query && $self->config->echo;
 
         # Only show a result set if the query produces a result set
         my $row_num = 0;
