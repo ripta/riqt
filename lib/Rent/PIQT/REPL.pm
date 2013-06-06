@@ -26,6 +26,8 @@ sub _search_and_instantiate_under {
         my ($val) = @_;
         return unless $val;
         return $val if ref $val eq $base;
+        return $val if ref($val) =~ /^\Q$base\E/;
+        return $val if ref $val && ref $val ne 'ARRAY';
 
         my ($klass, @args) = ref $val eq 'ARRAY' ? @$val : ($val, );
         return unless $klass;
