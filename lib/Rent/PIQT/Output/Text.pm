@@ -20,7 +20,7 @@ sub finish {
 sub record {
     my ($self, $values) = @_;
     foreach my $idx (0..$#$values) {
-        $self->printlnf("%s:", $self->field_names->[$idx]);
+        # $self->printlnf("%s:", $self->field_names->[$idx]);
 
         if (defined $values->[$idx]) {
             foreach my $line (split /\n/, $values->[$idx]) {
