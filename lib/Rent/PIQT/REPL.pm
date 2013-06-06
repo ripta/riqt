@@ -343,7 +343,7 @@ sub register {
             $self->output->debugf("Registering internal command %s => %s", quote($_), $code);
             $self->_commands->{uc($_)} = $code;
         } else {
-            $self->output->warnf("Cannot register internal command '%s' to point to a %s", $_, ref($code));
+            $self->output->warnf("Cannot register internal command %s to point to a %s", quote($_), ref($code));
         }
     }
 }
