@@ -100,11 +100,13 @@ sub POSTBUILD {
                     {name => "Value", type => "string", length => 4000},
                 ]
             );
-            if (defined $name) {
+            if ($name) {
                 if (my $value = $c->$name) {
                     $o->record([$name, $value]);
                 } else {
-                    $o->record([$name, undef]);
+                    foreach my $key (sort $c->KEYS) {
+                        $o->record([$key, $c->$key]) if $key =~ /$name/i;
+                    }
                 }
             } else {
                 foreach my $key (sort $c->KEYS) {
