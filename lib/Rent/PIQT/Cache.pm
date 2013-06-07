@@ -63,9 +63,9 @@ sub POSTBUILD {
                 my $val = $c->get($key);
                 if (defined $val) {
                     if (ref $val eq 'ARRAY') {
-                        $o->record([$key, 'ARRAY', scalar(@$val) . " elements", '']);
+                        $o->record([$key, 'ARRAY', scalar(@$val), '']);
                     } elsif (ref $val eq 'HASH') {
-                        $o->record([$key, 'HASH', scalar(keys %$val) . " elements", '']);
+                        $o->record([$key, 'HASH', scalar(keys %$val), '']);
                     } else {
                         $o->record([$key, 'SCALAR', length($val), $val]);
                     }
