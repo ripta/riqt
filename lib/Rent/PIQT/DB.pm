@@ -245,6 +245,16 @@ sub field_prototypes {
         };
     }
 
+    $self->controller->output->debugf("Field prototypes:");
+    foreach my $idx (0..$#$prototypes) {
+        $self->controller->output->debugf(" #%d | %-40s | %-15s | %-5s",
+            $idx,
+            $prototypes->[$idx]->{'name'},
+            $prototypes->[$idx]->{'type'},
+            $prototypes->[$idx]->{'size'},
+        );
+    }
+
     return $prototypes;
 }
 
