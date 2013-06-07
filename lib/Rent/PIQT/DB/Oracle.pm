@@ -133,7 +133,10 @@ around POSTBUILD => sub {
             my $sql = sprintf("SELECT DBMS_METADATA.GET_DDL('%s') FROM DUAL", join("', '", @fn_args));
             $ctrl->with_output('text',
                 sub {
-                    $self->display($ctrl->output) if $self->do($sql);
+                    if ($self->do($sql)) {
+                        my $rows = $self->display($ctrl->output);
+                        $ctrl->output->warnf("Object %s of type %s does not exist", quote($obj), $type) unless $rows;
+                    }
                 },
             );
 
