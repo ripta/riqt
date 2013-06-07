@@ -12,7 +12,7 @@ sub BUILD {
         sub {
             my ($ctrl, $object_name) = @_;
             my @infos = $ctrl->db->describe_object($object_name);
-            return 1;
+            return 1 unless @infos;
 
             $ctrl->output->data_set(
                 [
