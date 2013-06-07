@@ -341,7 +341,11 @@ sub load_plugin {
     }
 }
 
-# Process a line of SQL.
+# Process a line of SQL, command, or block. Returns:
+#  0 if the query couldn't be processed because it was incomplete;
+# +1 if the query was successful;
+# +2 if the query was an internal command;
+# +4 if the query was an SQL query.
 sub process {
     my ($self, $buffer, $line) = @_;
 
@@ -349,8 +353,13 @@ sub process {
     # we need to skip appending to the query and checking for internal
     # command execution; anything that starts with @ is a file
     if ($$buffer eq '' && $line =~ /^@(\S+)/) {
+        $self->output->debugf("Executing %s, if available", quote($1));
         $self->run_file($1);
-    } elsif ($line ne '/') {
+        return 3;
+    } elsif ($line eq '/') {
+        $self->output->debugf("Re-executing buffer, if available");
+    } else {
+        $self->output->debugf("Read: %s", printable($line));
         $$buffer .= $line;
 
         # Skip any blank lines
@@ -364,17 +373,16 @@ sub process {
         if (eval { $self->execute($$buffer) }) {
             $self->output->println;
             $$buffer = '';
-            return 1;
+            return 3;
         }
         if ($@) {
             $self->output->error($@);
             $$buffer = '';
-            return 1;
+            return 2;
         }
 
         # Display a continuation prompt if the query isn't already complete
         unless ($self->db->query_is_complete($$buffer)) {
-            $self->_prompt('+> ');
             $$buffer .= "\n";
             return 0;
         }
@@ -396,13 +404,16 @@ sub process {
         }
 
         $self->output->finish_timing($row_num || $self->db->rows_affected);
+
+        $$buffer = '';
+        return 5;
     } else {
         $self->output->reset_timing;
         $self->output->error($self->db->last_error);
-    }
 
-    $$buffer = '';
-    return 1;
+        $$buffer = '';
+        return 4;
+    }
 }
 
 # Register an internal command. Multiple commands can be registered at the same
@@ -442,6 +453,7 @@ sub run {
 
 sub run_file {
     my ($self, $file) = @_;
+    $self->output->debugf("Loading SQL %s", quote($file));
 
     $file =~ s#^~/#$ENV{'HOME'} . '/'#e;
     unless (-e $file) {
@@ -469,11 +481,15 @@ sub run_file {
             return;
         }
     }
+
+    $self->output->debugf("Successfully processed %d lines from %s", $lineno, quote($file));
+    return;
 }
 
 sub run_query {
     my ($self, $query) = @_;
     my @lines = split /\r?\n/, $query;
+    $self->output->debugf("Running single query (%d lines)", scalar(@lines));
 
     my $buffer = '';
     while (my $line = shift @lines) {
@@ -482,8 +498,6 @@ sub run_query {
             $self->output->error($@);
             return 0;
         }
-
-        # $self->output->debugf("Running one-off query %s", quote(printable($query)));
     }
 
     return 1;
