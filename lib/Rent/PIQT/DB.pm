@@ -179,13 +179,16 @@ sub disconnect {
 
 sub display {
     my ($self, $output, $limit) = @_;
+    my $row_num = 0;
 
     $output->start($self->field_prototypes);
     while (my $row = $self->fetch_array) {
         $output->record([ @$row ]);
+        last if $limit && ++$row_num >= $limit;
     }
     $output->finish;
-    return 1;
+    $output->warn("There may be more rows") if $limit && $row_num >= $limit;
+    return $row_num;
 }
 
 sub do {
