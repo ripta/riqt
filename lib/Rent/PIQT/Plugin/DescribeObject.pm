@@ -22,6 +22,12 @@ sub BUILD {
                 ],
                 map { [ @{$_}{qw/name type null/} ] } @infos,
             );
+
+            $ctrl->output->okf(
+                "Displayed %s",
+                pluralize(scalar(@infos), 'column', 'columns'),
+            );
+
             return 1;
         },
     );
