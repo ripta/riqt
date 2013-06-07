@@ -66,6 +66,7 @@ sub POSTBUILD {
 sub colorize {
     my ($self, $msg, $color) = @_;
     return $msg unless $self->is_interactive;
+    return $msg unless $self->controller->config->colors;
 
     return color($color) . $msg . color('reset');
 }
