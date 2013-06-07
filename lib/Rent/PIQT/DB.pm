@@ -297,7 +297,13 @@ sub name_completion {
         }
     }
 
-    @words = map { s/^\Q$text\E/$text/i; $_ } @words;
+    if (lc $text eq $text) {
+        @words = grep { m/^\Q$text\E/ } map { lc } @words;
+    } elsif (uc $text eq $text) {
+        @words = grep { m/^\Q$text\E/ } map { uc } @words;
+    } else {
+        @words = map { s/^\Q$text\E/$text/i; $_ } @words;
+    }
     return @words;
 }
 
