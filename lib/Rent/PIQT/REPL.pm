@@ -227,6 +227,15 @@ sub _build__term {
 sub BUILD {
     my ($self) = @_;
 
+    # Register verbosity setting
+    $self->config->verbose($self->verbose);
+    $self->config->register('verbose',
+        sub {
+            my ($config, $name, $old_value, $new_value) = @_;
+            $config->controller->verbose(int($new_value));
+        },
+    );
+
     # Run each component's POSTBUILD method
     foreach my $name (qw/cache config db output/) {
         my $attr = $self->$name;
