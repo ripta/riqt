@@ -74,7 +74,7 @@ sub POSTBUILD {
             my ($self, $arg) = @_;
             my ($name, $value) = split /\s+/, $arg, 2;
 
-            if ($value) {
+            if (defined $value) {
                 $name = lc $name;
                 $name =~ s/\s/_/g;
 
