@@ -109,8 +109,8 @@ around POSTBUILD => sub {
                     PRIOR id = parent_id
                 AND PRIOR statement_id = statement_id
             };
-            $self->do_and_display($ctrl->output, $retrieve_sql);
 
+            $self->display($ctrl->output) if $self->do($retrieve_sql);
             return 1;
         },
     );
@@ -133,7 +133,7 @@ around POSTBUILD => sub {
             my $sql = sprintf("SELECT DBMS_METADATA.GET_DDL('%s') FROM DUAL", join("', '", @fn_args));
             $ctrl->with_output('text',
                 sub {
-                    $self->do_and_display($ctrl->output, $sql);
+                    $self->display($ctrl->output) if $self->do($sql);
                 },
             );
 
@@ -157,21 +157,6 @@ around describe_object => sub {
     } @infos;
 
 };
-
-sub do_and_display {
-    my ($self, $output, $sql, @args) = @_;
-
-    if ($self->prepare($sql) && $self->execute(@args)) {
-        $output->start($self->field_prototypes);
-        while (my $row = $self->fetch_array) {
-            $output->record([ @$row ]);
-        }
-        $output->finish;
-        return 1;
-    }
-
-    return 0;
-}
 
 # Check whether the query provided is complete or not. Query completion here
 # is defined as ending with a semicolon if the query isn't a PL/SQL block.

@@ -177,6 +177,22 @@ sub disconnect {
     return $self->driver ? $self->driver->disconnect : 0;
 }
 
+sub display {
+    my ($self, $output, $limit) = @_;
+
+    $output->start($self->field_prototypes);
+    while (my $row = $self->fetch_array) {
+        $output->record([ @$row ]);
+    }
+    $output->finish;
+    return 1;
+}
+
+sub do {
+    my ($self, $sql, @args) = @_;
+    return $self->prepare($sql) && $self->execute(@args);
+}
+
 sub dsn {
     my ($self) = @_;
     return $self->username
