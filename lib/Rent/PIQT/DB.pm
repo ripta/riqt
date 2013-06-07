@@ -235,12 +235,34 @@ sub field_prototypes {
     my $names = $sth->{'NAME_lc'};
     my $types = $sth->{'TYPE'};
     my $precs = $sth->{'PRECISION'};
+    my $scale = $sth->{'SCALE'};
 
     my $prototypes = [];
     for my $i (0..$#$names) {
+        my $type;
+        if (my $rtype = $self->driver->type_info($types->[$i])) {
+            $type = $rtype->{'LOCAL_TYPE_NAME'} || $rtype->{'TYPE_NAME'} || $types->[$i];
+        } else {
+            $type = $types->[$i];
+        }
+
+        if ($type =~ /char/i) {
+            $type = 'str';
+        } elsif ($type =~ /date|time/i) {
+            $type = 'date';
+        } elsif ($type =~ /float|decimal|number/i) {
+            if ($scale->[$i]) {
+                $type = 'float';
+            } else {
+                $type = 'int';
+            }
+        } else {
+            $type = 'str';
+        }
+
         push @$prototypes, {
             name => $names->[$i],
-            type => $types->[$i],
+            type => $type,
             size => $precs->[$i],
         };
     }
