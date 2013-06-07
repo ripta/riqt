@@ -53,12 +53,25 @@ sub POSTBUILD {
 
             $o->start(
                 [
-                    {name => "Name",  type => "string", length => 255},
-                    {name => "Value", type => "string", length => 4000},
+                    {name => "Name",  type => "str", length => 255},
+                    {name => "Type",  type => "str", length => 10},
+                    {name => "Len",   type => "int", length => 6},
+                    {name => "Value", type => "str", length => 4000},
                 ]
             );
             foreach my $key (sort $c->KEYS) {
-                $o->record([$key, $c->get($key)]);
+                my $val = $c->get($key);
+                if (defined $val) {
+                    if (ref $val eq 'ARRAY') {
+                        $o->record([$key, 'ARRAY', scalar(@$val) . " elements", '']);
+                    } elsif (ref $val eq 'HASH') {
+                        $o->record([$key, 'HASH', scalar(keys %$val) . " elements", '']);
+                    } else {
+                        $o->record([$key, 'SCALAR', length($val), $val]);
+                    }
+                } else {
+                    $o->record([$key, 'SCALAR', 0, undef]);
+                }
             }
             $o->finish;
 
