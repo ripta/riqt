@@ -284,8 +284,8 @@ sub name_completion {
         } elsif (my $names = $c->get('object_names')) {
             @candidates = sort map { lc $_->{'name'} } @$names;
         } else {
-            $o->warn("Tab completion not available, because the object cache is not loaded yet.");
-            $o->warn("Object cache can be primed by running 'load'.");
+            $o->warn("Tab completion for objects is not available, because the cache is not loaded yet.");
+            $o->warn("The object cache can be primed by running 'load' on your prompt.");
         }
 
         foreach my $word (@candidates) {
