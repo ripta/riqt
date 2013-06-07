@@ -245,6 +245,34 @@ sub BUILD {
         }
     }
 
+    # Register > command to forward the result set
+    $self->register('>',
+        sub {
+            my ($self) = @_;
+
+            # Check for an active query
+            unless ($self->db->statement) {
+                $self->output->error("No active query.");
+                return 1;
+            }
+
+            # Ensure that the query has a result set first
+            unless ($self->db->has_result_set) {
+                $self->output->error("Active query has no result set.");
+                return 1;
+            }
+
+            $self->output->start_timing;
+
+            # Only show a result set if the query produces a result set
+            my $limit = $self->config->limit || $self->config->deflimit || 0;
+            my $row_num = $self->db->display($self->output, $limit);
+
+            $self->output->finish_timing($row_num || $self->db->rows_affected);
+            return 1;
+        },
+    );
+
     # Register an extra exit command; the \q alias is from mysql-cli
     $self->register('exit', 'quit', '\q',
         sub {
@@ -252,7 +280,7 @@ sub BUILD {
             $self->output->info("BYE");
             $self->_done(1);
             return 1;
-        }
+        },
     );
 }
 
