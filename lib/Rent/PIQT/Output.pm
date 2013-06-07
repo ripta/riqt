@@ -208,7 +208,7 @@ sub warn {
 sub warnf {
     my ($self, $msg, @args) = @_;
     $msg ||= "";
-    $self->info(sprintf($msg, @args));
+    $self->warn(sprintf($msg, @args));
 }
 
 1;
