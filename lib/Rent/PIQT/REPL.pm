@@ -348,7 +348,9 @@ sub process {
     # If the last line is '/', then re-execute the buffer, which means
     # we need to skip appending to the query and checking for internal
     # command execution; anything that starts with @ is a file
-    if ($line ne '/') {
+    if ($$buffer eq '' && $line =~ /^@(\S+)/) {
+        $self->run_file($1);
+    } elsif ($line ne '/') {
         $$buffer .= $line;
 
         # Skip any blank lines
@@ -436,6 +438,37 @@ sub run {
     }
 
     $self->run_repl;
+}
+
+sub run_file {
+    my ($self, $file) = @_;
+
+    $file =~ s#^~/#$ENV{'HOME'} . '/'#e;
+    unless (-e $file) {
+        $self->output->errorf("Cannot load file %s: file does not exist", quote($file));
+        return 0;
+    }
+
+    open my $fh, $file or do {
+        $self->output->errorf("Cannot open file %s: %s", quote($file), $!);
+        return 0;
+    };
+
+    # Loop until the end of the file
+    my $buffer = '';
+    my $lineno = 0;
+    while (++$lineno) {
+        # Read a single line from the terminal
+        my $line = <$fh>;
+        last unless defined $line;
+        chomp $line;
+
+        eval { $self->process(\$buffer, $line) };
+        if ($@) {
+            $self->output->error("Cannot process file %s: died at line %d", quote($file), $lineno);
+            return;
+        }
+    }
 }
 
 sub run_query {
