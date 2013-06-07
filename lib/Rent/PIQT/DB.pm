@@ -277,9 +277,10 @@ sub name_completion {
         my @candidates = ();
         if ($char == 0) {
             push @candidates,
-                    qw( select insert update delete create drop ),
-                    qw( begin declare ),
-                    qw( ed vi ! @ );
+                    qw( SELECT INSERT UPDATE DELETE CREATE DROP ),
+                    qw( BEGIN DECLARE ),
+                    qw( ED VI ! @ );
+            push @candidates, $self->controller->internal_commands;
         } elsif (my $names = $c->get('object_names')) {
             @candidates = sort map { lc $_->{'name'} } @$names;
         } else {

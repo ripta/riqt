@@ -308,6 +308,12 @@ sub execute {
     }
 }
 
+sub internal_commands {
+    my ($self) = @_;
+    return () unless $self->_commands;
+    return sort keys %{ $self->_commands };
+}
+
 # Load a plugin and install it dynamically.
 sub load_plugin {
     my ($self, $plugin_name) = @_;
