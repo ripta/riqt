@@ -323,17 +323,7 @@ sub process {
         my $row_num = 0;
         if ($self->db->has_result_set) {
             my $limit = $self->config->limit || $self->config->deflimit || 0;
-
-            # Output a header and each record
-            $self->output->start($self->db->field_prototypes);
-            while (my $row = $self->db->fetch_array) {
-                $self->output->record([ @$row ]);
-                last if $limit && ++$row_num >= $limit;
-            }
-
-            # Finish up
-            $self->output->finish;
-            $self->output->warn("There may be more rows") if $row_num >= $limit;
+            $row_num = $self->db->display($self->output, $limit);
         }
 
         $self->output->finish_timing($row_num || $self->db->rows_affected);
