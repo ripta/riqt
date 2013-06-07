@@ -343,15 +343,48 @@ sub load_plugin {
 
 # Process a line of SQL.
 sub process {
-    my ($self, $query) = @_;
+    my ($self, $buffer, $line) = @_;
+
+    # If the last line is '/', then re-execute the buffer, which means
+    # we need to skip appending to the query and checking for internal
+    # command execution; anything that starts with @ is a file
+    if ($line ne '/') {
+        $$buffer .= $line;
+
+        # Skip any blank lines
+        if ($$buffer =~ /^\s*$/s) {
+            $self->output->println;
+            $$buffer = '';
+            return 1;
+        }
+
+        # Skip any internal commands correctly handled
+        if (eval { $self->execute($$buffer) }) {
+            $self->output->println;
+            $$buffer = '';
+            return 1;
+        }
+        if ($@) {
+            $self->output->error($@);
+            $$buffer = '';
+            return 1;
+        }
+
+        # Display a continuation prompt if the query isn't already complete
+        unless ($self->db->query_is_complete($$buffer)) {
+            $self->_prompt('+> ');
+            $$buffer .= "\n";
+            return 0;
+        }
+    }
 
     # Sanitize the query as necesary
-    $query = $self->db->sanitize($query);
+    $$buffer = $self->db->sanitize($$buffer);
 
     # Prepare and execute the query
     $self->output->start_timing;
-    if ($self->db->prepare($query, save_query => 1) && $self->db->execute) {
-        $self->output->infof("Query: %s", $query) if $query && $self->config->echo;
+    if ($self->db->prepare($$buffer, save_query => 1) && $self->db->execute) {
+        $self->output->infof("Query: %s", $$buffer) if $$buffer && $self->config->echo;
 
         # Only show a result set if the query produces a result set
         my $row_num = 0;
@@ -365,6 +398,9 @@ sub process {
         $self->output->reset_timing;
         $self->output->error($self->db->last_error);
     }
+
+    $$buffer = '';
+    return 1;
 }
 
 # Register an internal command. Multiple commands can be registered at the same
@@ -395,67 +431,52 @@ sub run {
 
     # If a query was provided, process it and return immediately
     if ($query) {
-        $self->output->debugf("Running one-off query %s", quote(printable($query)));
-        $self->process($query);
+        $self->run_query($query);
         return;
     }
 
-    $query ||= '';
+    $self->run_repl;
+}
+
+sub run_query {
+    my ($self, $query) = @_;
+    my @lines = split /\r?\n/, $query;
+
+    my $buffer = '';
+    while (my $line = shift @lines) {
+        eval { $self->process(\$buffer, $line) };
+        if ($@) {
+            $self->output->error($@);
+            return 0;
+        }
+
+        # $self->output->debugf("Running one-off query %s", quote(printable($query)));
+    }
+
+    return 1;
+}
+
+sub run_repl {
+    my ($self) = @_;
 
     # Set the default prompt to the database's data source name
     $self->output->debugf("Entering interactive mode for %s", quote($self->db->dsn));
     $self->_prompt($self->db->dsn . '> ');
 
     # Loop until we're told to exit
+    my $buffer = '';
     while (!$self->_done) {
-        $query ||= '';
-
         # Read a single line from the terminal
         my $line = $self->_term->readline($self->_prompt);
         last unless defined $line;
 
-        # If the last line is '/', then re-execute the buffer, which means
-        # we need to skip appending to the query and checking for internal
-        # command execution
-        if ($line ne '/') {
-            $query .= $line;
-
-            # Skip any blank lines
-            if ($query =~ /^\s*$/s) {
-                $self->output->println;
-                $query = '';
-                next;
-            }
-
-            # Skip any internal commands correctly handled
-            if (eval { $self->execute($query) }) {
-                $self->output->println;
-                $query = '';
-                next;
-            }
-            if ($@) {
-                $self->output->error($@);
-                $query = '';
-                next;
-            }
-
-            # Display a continuation prompt if the query isn't already complete
-            unless ($self->db->query_is_complete($query)) {
-                $self->_prompt('+> ');
-                $query .= "\n";
-                next;
-            }
+        if (eval { $self->process(\$buffer, $line) }) {
+            $self->_prompt($self->db->dsn . '> ');
+        } elsif ($@) {
+            $self->output->error($@);
+        } else {
+            $self->_prompt('+> ');
         }
-
-        # Process the query safely, and report back any errors; might need
-        # prettification in the future
-        eval { $self->process($query) };
-        $self->output->error($@) if $@;
-
-        # Reset the prompt back, in case the last line was a continuation
-        $self->output->println;
-        $self->_prompt($self->db->dsn . '> ');
-        $query = '';
     }
 
     # Touch the cache (?)
