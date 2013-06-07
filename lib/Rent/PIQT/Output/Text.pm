@@ -23,14 +23,14 @@ sub record {
         # $self->printlnf("%s:", $self->field_names->[$idx]);
 
         if (defined $values->[$idx]) {
-            foreach my $line (split /\n/, $values->[$idx]) {
+            my $value = $values->[$idx] . "";
+            $value =~ s/\n$//;
+            foreach my $line (split /\n/, $value) {
                 $self->println('    ' . $line);
             }
         } else {
-            $self->println('    (null)');
+            $self->println('    ');
         }
-
-        $self->println;
     }
 }
 
