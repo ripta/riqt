@@ -404,12 +404,14 @@ sub process {
         }
 
         $self->output->finish_timing($row_num || $self->db->rows_affected);
+        $self->output->println;
 
         $$buffer = '';
         return 5;
     } else {
         $self->output->reset_timing;
         $self->output->error($self->db->last_error);
+        $self->output->println;
 
         $$buffer = '';
         return 4;
