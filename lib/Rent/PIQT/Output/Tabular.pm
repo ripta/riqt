@@ -19,7 +19,7 @@ sub start {
     $self->field_sizes([ ]);
     foreach my $field (@$fields) {
         my ($name, $type, $size) = @$field{qw/name type size/};
-        push @{ $self->field_sizes }, ($size && $size > length($name) ? $size : length($name)) || 0;
+        push @{ $self->field_sizes }, length($name) || 0;
     }
 }
 
