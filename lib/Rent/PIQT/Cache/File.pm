@@ -22,7 +22,6 @@ sub BUILD {
     } else {
         $self->{'kv'} = {};
     }
-    # print "Loaded Cache::File (", join(', ', keys %{$self->{'kv'}}), ")\n";
 };
 
 sub BUILDARGS {
@@ -52,6 +51,7 @@ around save => sub {
     $self->$orig;
     nstore $self->{'kv'}, $self->filename if $self->{'kv'};
     # print "Saved (", join(', ', keys %{$self->{'kv'}}), ") into ", $self->filename, "\n";
+    return 1;
 };
 
 1;

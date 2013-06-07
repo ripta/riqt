@@ -26,9 +26,23 @@ sub BUILD {
     $self->{'kv'} ||= {};
 }
 
+# Return all keys in the cache
+sub KEYS {
+    my ($self) = @_;
+    return keys %{ $self->{'kv'} };
+}
+
 # Set the namespace according to the database data source name.
 sub POSTBUILD {
     my ($self) = @_;
+
+    $self->controller->output->debugf("Loaded %d %s into cache: %s",
+        scalar($self->KEYS),
+        scalar($self->KEYS) == 1 ? 'key' : 'keys',
+        join(', ', $self->KEYS),
+    );
+
+    $self->controller->output->debugf("Setting cache namespace to %s", $self->controller->db->dsn);
     $self->namespace($self->controller->db->dsn);
 }
 
@@ -51,6 +65,12 @@ sub get {
 # No-op to save the cache.
 sub save {
     my ($self) = @_;
+    $self->controller->output->debugf(
+        "CACHE SAVE (%d %s)",
+        scalar($self->KEYS),
+        scalar($self->KEYS) == 1 ? 'key' : 'keys',
+    );
+    return 1;
 }
 
 # Set the key in the cache to a specific value.
