@@ -136,6 +136,10 @@ sub run_pending_hooks {
     foreach my $name (keys %{$self->{'pending_hooks'}}) {
         my $args = $self->{'pending_hooks'}->{$name};
         if (exists $self->{'hooks'}->{$name} && ref $self->{'hooks'}->{$name} eq 'ARRAY') {
+            $self->controller->output->debugf("Running %s for %s",
+                pluralize(scalar(@{ $self->{'hooks'}->{$name} }), 'pending hook', 'pending hooks'),
+                quote($name),
+            );
             foreach my $hook (@{ $self->{'hooks'}->{$name} }) {
                 $hook->(@$args);
             }
