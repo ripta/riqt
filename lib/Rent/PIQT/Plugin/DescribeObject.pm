@@ -12,6 +12,8 @@ sub BUILD {
         sub {
             my ($ctrl, $object_name) = @_;
             my @infos = $ctrl->db->describe_object($object_name);
+            return 1;
+
             $ctrl->output->data_set(
                 [
                     {name => 'Column Name', type => 'str', length => max(11, map { length $_->{'name'} } @infos)},
