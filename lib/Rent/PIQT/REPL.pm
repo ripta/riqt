@@ -141,6 +141,13 @@ sub _set_controller {
     return $attr;
 }
 
+# The verbosity level
+has 'verbose' => (
+    is => 'rw',
+    required => 0,
+    default => 0,
+);
+
 # Registered internal commands.
 has '_commands' => (
     is => 'lazy',

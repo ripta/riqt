@@ -85,8 +85,8 @@ sub data_set {
 
 sub debug {
     my ($self, $msg) = @_;
-    return unless $self->controller->config->verbose;
-    return unless $self->controller->config->verbose >= 2;
+    return unless $self->controller->verbose;
+    return unless $self->controller->verbose >= 2;
 
     $msg ||= "";
     $msg .= "\n";
@@ -134,8 +134,8 @@ sub finish_timing {
 
 sub info {
     my ($self, $msg) = @_;
-    return unless $self->controller->config->verbose;
-    return unless $self->controller->config->verbose >= 1;
+    return unless $self->controller->verbose;
+    return unless $self->controller->verbose >= 1;
 
     $msg ||= "";
     $msg .= "\n";
