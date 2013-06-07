@@ -19,7 +19,7 @@ sub start {
     $self->field_sizes([ ]);
     foreach my $field (@$fields) {
         my ($name, $type, $size) = @$field{qw/name type size/};
-        push @{ $self->field_sizes }, length($name) || 0;
+        push @{ $self->field_sizes }, ($size && $size > length($name) ? $size : length($name)) || 0;
     }
 }
 
@@ -30,9 +30,20 @@ sub finish {
     my @seps = ();
     do {
         my @fmts = ();
-        foreach (@{ $self->field_sizes }) {
-            push @fmts, '%-' . $_ . 's';
-            push @seps, '=' x $_;
+        foreach my $idx (0..$#{ $self->field_sizes}) {
+            my $type = lc $self->fields->[$idx]->{'type'};
+            if ($type eq 'str') {
+                push @fmts, '%-' . $self->field_sizes->[$idx] . 's';
+            } elsif ($type eq 'int') {
+                push @fmts, '%' . $self->field_sizes->[$idx] . 's';
+            } elsif ($type eq 'float') {
+                push @fmts, '%' . $self->field_sizes->[$idx] . 'f';
+            } else {
+                # bitflag, bool, date
+                push @fmts, '%-' . $self->field_sizes->[$idx] . 's';
+            }
+
+            push @seps, '=' x $self->field_sizes->[$idx];
         }
 
         $fmt_string = join(' ', @fmts);
