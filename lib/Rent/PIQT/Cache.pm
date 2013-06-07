@@ -44,6 +44,27 @@ sub POSTBUILD {
 
     $self->controller->output->debugf("Setting cache namespace to %s", $self->controller->db->dsn);
     $self->namespace($self->controller->db->dsn);
+
+    $self->controller->register('show cache',
+        sub {
+            my ($self) = @_;
+            my $c = $self->cache;
+            my $o = $self->output;
+
+            $o->start(
+                [
+                    {name => "Name",  type => "string", length => 255},
+                    {name => "Value", type => "string", length => 4000},
+                ]
+            );
+            foreach my $key (sort $c->KEYS) {
+                $o->record([$key, $c->get($key)]);
+            }
+            $o->finish;
+
+            return 1;
+        }
+    );
 }
 
 # Delete a key from the cache. Returns the value from the cache, or undef.
