@@ -177,6 +177,7 @@ my $repl = Rent::PIQT::REPL->new(
 );
 
 $repl->load_plugin('DescribeObject');
+$repl->load_plugin('Print');
 $repl->load_plugin('Transactional');
 
 $repl->run($sql);

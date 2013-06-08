@@ -1,15 +1,29 @@
 package Rent::PIQT::Util;
 
 use strict;
-use String::Escape qw/unbackslash unsinglequote/;
+use String::Escape qw/
+    backslash
+    unbackslash
+    unsinglequote
+    unquote
+/;
 
 our @ISA = qw/Exporter/;
 our @EXPORT = qw/
+    is_double_quoted
+    is_regexp_string
+    is_single_quoted
     like_to_regexp
+    parse_argument_string
     pluralize
     rstring_to_regexp
 /;
 our @EXPORT_OK = @EXPORT;
+
+sub is_double_quoted {
+    my ($str) = @_;
+    return $str =~ /^".*"$/;
+}
 
 sub is_regexp_string {
     my ($str) = @_;
@@ -28,6 +42,17 @@ sub like_to_regexp {
     my $like = unbackslash unsinglequote $str;
     $like =~ s/%/.*/g;
     return qr/^$like$/i;
+}
+
+sub parse_argument_string {
+    my ($str) = @_;
+    if (is_double_quoted($str)) {
+        return unbackslash unquote $str;
+    } elsif (is_single_quoted($str)) {
+        return unsinglequote $str;
+    } else {
+        die "Syntax error: expected single- or double-quoted string";
+    }
 }
 
 sub pluralize {
