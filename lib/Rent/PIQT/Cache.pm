@@ -60,6 +60,8 @@ sub POSTBUILD {
                 ]
             );
             foreach my $key (sort $c->KEYS) {
+                next unless $key =~ m{^/};
+
                 my $val = $c->get($key);
                 if (defined $val) {
                     if (ref $val eq 'ARRAY') {
