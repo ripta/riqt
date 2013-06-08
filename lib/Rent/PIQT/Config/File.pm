@@ -91,6 +91,8 @@ around POSTBUILD => sub {
             $lineno,
         );
     }
+
+    $self->is_modified(0);
 };
 
 
