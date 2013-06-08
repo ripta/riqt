@@ -44,6 +44,7 @@ sub POSTBUILD {
 
     $self->controller->output->debugf("Setting cache namespace to %s", $self->controller->db->dsn);
     $self->namespace($self->controller->db->dsn);
+    $self->set('/current', $self->controller->db->dsn);
 
     $self->controller->register('show cache',
         sub {
