@@ -124,6 +124,15 @@ sub register {
     my ($self, $command, $hook) = @_;
     $command = lc $command;
 
+    die "Hook for config setting '$command' cannot be empty" unless $hook;
+
+    unless (ref $hook eq 'CODE') {
+        $hook = sub {
+            die "Read-only: the config setting '$command' cannot be modified from the console";
+        };
+        delete $self->{'pending_hooks'}->{$command};
+    }
+
     $self->{'hooks'}->{$command} ||= [ ];
     push @{ $self->{'hooks'}->{$command} }, $hook;
 

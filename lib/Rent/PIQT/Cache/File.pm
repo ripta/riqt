@@ -46,6 +46,13 @@ sub BUILDARGS {
     };
 }
 
+around POSTBUILD => sub {
+    my ($orig, $self) = @_;
+    $self->$orig;
+    $self->controller->config->cache_device($self->filename);
+    $self->controller->config->register('cache_device', -1);
+};
+
 around save => sub {
     my ($orig, $self) = @_;
     $self->$orig;
