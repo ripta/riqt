@@ -55,8 +55,7 @@ sub DEMOLISH {
 # During POSTBUILD phase, any existing configuration files should be loaded
 # into memory.
 around POSTBUILD => sub {
-    my ($orig, $self) = (shift, shift);
-    $self->$orig(@_);
+    my ($orig, $self, @args) = @_;
 
     # Output a warning if the configuration file doesn't exist
     unless (-e $self->filename) {
@@ -92,7 +91,7 @@ around POSTBUILD => sub {
         );
     }
 
-    $self->is_modified(0);
+    $self->$orig(@args);
 };
 
 
