@@ -376,7 +376,10 @@ sub process {
             return 3;
         }
         if ($@) {
-            $self->output->error($@);
+            my $errstr = $@;
+            $errstr =~ s/ at \S+ line \d+.\s*//;
+            $self->output->error($errstr);
+            $self->output->println;
             $$buffer = '';
             return 2;
         }
