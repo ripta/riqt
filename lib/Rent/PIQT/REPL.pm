@@ -456,6 +456,7 @@ sub run {
     $self->run_repl;
 }
 
+# Run queries from a single file. Files can load other files.
 sub run_file {
     my ($self, $file) = @_;
     $self->output->debugf("Loading SQL %s", quote($file));
@@ -482,15 +483,19 @@ sub run_file {
 
         eval { $self->process(\$buffer, $line) };
         if ($@) {
-            $self->output->error("Cannot process file %s: died at line %d", quote($file), $lineno);
+            $self->output->errorf("Cannot process file %s: died at line %d", quote($file), $lineno);
+            $self->output->errorf("    %s", $@);
+            close $fh;
             return;
         }
     }
 
+    close $fh;
     $self->output->debugf("Successfully processed %d lines from %s", $lineno, quote($file));
     return;
 }
 
+# Run a single line of query.
 sub run_query {
     my ($self, $query) = @_;
     my @lines = split /\r?\n/, $query;
@@ -508,11 +513,12 @@ sub run_query {
     return 1;
 }
 
+# Start an interactive session on the current database driver.
 sub run_repl {
     my ($self) = @_;
 
     # Set the default prompt to the database's data source name
-    $self->output->debugf("Entering interactive mode for %s", quote($self->db->dsn));
+    $self->output->debugf("Entering interactive mode for resource %s", quote($self->db->dsn));
     $self->_prompt($self->db->dsn . '> ');
 
     # Loop until we're told to exit
