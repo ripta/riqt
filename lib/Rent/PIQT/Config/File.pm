@@ -36,7 +36,7 @@ sub DEMOLISH {
     my ($self) = @_;
     return 1 unless $self->is_modified;
 
-    open my $fh, $self->filename or do {
+    open my $fh, '>', $self->filename or do {
         warn "Cannot save configuration into " . $self->filename . ": " . $!;
         return;
     };
