@@ -23,6 +23,10 @@ sub AUTOLOAD {
             $value = 0;
         }
 
+        if (exists($self->{'kv'}->{$name})) {
+            return if $self->{'kv'}->{$name} eq $value;
+        }
+
         my @hook_args = (
             $self,
             $name,
