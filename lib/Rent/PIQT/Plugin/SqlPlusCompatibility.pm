@@ -138,6 +138,7 @@ sub BUILD {
             if ($args) {
                 $args =~ s/^\s+//;
                 $args =~ s/\s+$//;
+
                 if ($args =~ /^OFF$/i) {
                     $self->spool(undef);
                 } elsif ($args =~ /^OUT$/i) {

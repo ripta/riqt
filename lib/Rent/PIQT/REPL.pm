@@ -228,15 +228,6 @@ sub _build__term {
 sub BUILD {
     my ($self) = @_;
 
-    # Register verbosity setting
-    $self->config->verbose($self->verbose);
-    $self->config->register('verbose',
-        sub {
-            my ($config, $name, $old_value, $new_value) = @_;
-            $config->controller->verbose(int($new_value));
-        },
-    );
-
     # Run each component's POSTBUILD method
     foreach my $name (qw/cache config db output/) {
         my $attr = $self->$name;
@@ -245,6 +236,17 @@ sub BUILD {
             $attr->POSTBUILD;
         }
     }
+
+    # Register verbosity setting after component POSTBUILDs, so that we can
+    # override things if any component drivers override it, e.g., the config
+    # driver can load a different verbose setting, which we don't want sticking
+    $self->config->verbose($self->verbose);
+    $self->config->register('verbose',
+        sub {
+            my ($config, $name, $old_value, $new_value) = @_;
+            $config->controller->verbose(int($new_value));
+        },
+    );
 
     # Register > command to forward the result set
     $self->register('>',
