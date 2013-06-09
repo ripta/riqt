@@ -464,11 +464,13 @@ sub run_file {
     $file =~ s#^~/#$ENV{'HOME'} . '/'#e;
     unless (-e $file) {
         $self->output->errorf("Cannot load file %s: file does not exist", quote($file));
+        $self->output->println;
         return 0;
     }
 
     open my $fh, $file or do {
         $self->output->errorf("Cannot open file %s: %s", quote($file), $!);
+        $self->output->println;
         return 0;
     };
 
