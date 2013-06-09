@@ -43,8 +43,11 @@ sub finish {
             } elsif ($type eq 'float') {
                 push @fmt_head, '%' . $self->field_sizes->[$idx] . 's';
                 push @fmt_rec,  '%' . $self->field_sizes->[$idx] . 'f';
+            } elsif ($type eq 'bool') {
+                push @fmt_head, '%-' . $self->field_sizes->[$idx] . 's';
+                push @fmt_rec,  '%-' . $self->field_sizes->[$idx] . 's';
             } else {
-                # bitflag, bool, date
+                # bitflag, date
                 push @fmt_head, '%-' . $self->field_sizes->[$idx] . 's';
                 push @fmt_rec,  '%-' . $self->field_sizes->[$idx] . 's';
             }
@@ -60,26 +63,34 @@ sub finish {
     $self->printlnf($fmt_head, map { $_->{'name'} } @{ $self->fields });
     $self->printlnf($fmt_head, @seps);
     foreach my $record (@{$self->records}) {
-        $self->printlnf($fmt_rec, map { defined($_) ? $_ : '(null)' } @$record);
+        $self->printlnf($fmt_rec, @$record);
     }
 
 }
 
 sub record {
     my ($self, $values) = @_;
-    push @{$self->records}, $values;
+    my $mod_values = [];
 
     foreach my $idx (0..$#$values) {
         if (defined $values->[$idx]) {
-            if (length($values->[$idx]) > $self->field_sizes->[$idx]) {
-                $self->field_sizes->[$idx] = length($values->[$idx]);
+            if ($self->fields->[$idx]->{'type'} eq 'bool') {
+                $mod_values->[$idx] = $values->[$idx] ? 'YES' : 'NO';
+            } else {
+                $mod_values->[$idx] = $values->[$idx];
             }
         } else {
-            if (length('(null)') > $self->field_sizes->[$idx]) {
-                $self->field_sizes->[$idx] = length('(null)');
-            }
+            $mod_values->[$idx] = '(null)';
         }
     }
+
+    foreach my $idx (0..$#$mod_values) {
+        if (length($mod_values->[$idx]) > $self->field_sizes->[$idx]) {
+            $self->field_sizes->[$idx] = length($mod_values->[$idx]);
+        }
+    }
+
+    push @{$self->records}, $mod_values;
 }
 
 1;
