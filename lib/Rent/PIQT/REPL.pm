@@ -585,6 +585,8 @@ sub run_file {
 # Run a single line of query.
 sub run_query {
     my ($self, $query) = @_;
+    $query .= ';' unless $query =~ /;\s*$/;
+
     my @lines = split /\r?\n/, $query;
     $self->output->debugf("Running single query (%d lines)", scalar(@lines));
 
