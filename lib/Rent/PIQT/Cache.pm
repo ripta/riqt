@@ -48,9 +48,15 @@ sub POSTBUILD {
 
     $self->controller->register('show cache',
         sub {
-            my ($self) = @_;
-            my $c = $self->cache;
-            my $o = $self->output;
+            my ($ctrl, $args) = @_;
+            my $c = $ctrl->cache;
+            my $o = $ctrl->output;
+
+            my $path;
+            if ($args) {
+                $path = parse_argument_string($args);
+                $path = $self->_build_key($path);
+            }
 
             $o->start(
                 [
@@ -60,8 +66,10 @@ sub POSTBUILD {
                     {name => "Value", type => "str", length => 4000},
                 ]
             );
+
             foreach my $key (sort $c->KEYS) {
                 next unless $key =~ m{^/};
+                next if $path && $key !~ m{^\Q$path\E};
 
                 my $val = $c->get($key);
                 if (defined $val) {
