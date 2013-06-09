@@ -266,6 +266,38 @@ sub BUILD {
         },
     );
 
+    # Register "show plugin" command
+    $self->register('show plugin', 'show plugins',
+        sub {
+            my ($ctrl, $args) = @_;
+            my $o = $ctrl->output;
+
+            $o->start(
+                [
+                    {name => "Name",        type => "str", length => 255},
+                    {name => "Class",       type => "str", length => 255},
+                    {name => "Instance",    type => "str", length => 255},
+                    {name => "Created At",  type => "int", length => 20},
+                ]
+            );
+
+            foreach my $klass (sort keys %{$self->{'plugins'}}) {
+                my $name = $klass;
+                $name =~ s/.*:://;
+
+                my $instance = $self->{'plugins'}->{$klass}->{'instance'};
+                $instance =~ s/.*=//;
+
+                my $created_at = $self->{'plugins'}->{$klass}->{'created_at'};
+
+                $o->record([$name, $klass, $instance, $created_at * 1000]);
+            }
+
+            $o->finish;
+            return 1;
+        },
+    );
+
     # Register > command to forward the result set
     $self->register('>',
         sub {
@@ -355,7 +387,7 @@ sub load_plugin {
 
     if ($plugin) {
         $self->output->debugf("Loaded plugin %s", quote($plugin));
-        eval { $plugin->new(controller => $self) };
+        my $instance = eval { $plugin->new(controller => $self) };
         if ($@) {
             $self->output->errorf("Cannot instantiate plugin '%s':\n\t%s",
                 $plugin_name,
@@ -363,6 +395,12 @@ sub load_plugin {
             );
             return 0;
         }
+
+        $self->{'plugins'}->{$plugin} = {
+            instance    => $instance,
+            created_at  => $self->tick,
+            request_name=> $plugin_name,
+        };
 
         return 1;
     } else {
