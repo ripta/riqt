@@ -572,7 +572,7 @@ sub run_repl {
 
 sub sanitize_death {
     my ($self, $str) = @_;
-    return if $self->verbose >= 2;
+    return $str if $self->verbose >= 2;
 
     $str =~ s/ at \S+ line \d+.\s*//g;
     return $str;
