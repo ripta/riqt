@@ -342,7 +342,7 @@ sub BUILD {
     $self->register('exit', 'quit', '\q',
         sub {
             my ($self) = @_;
-            $self->output->info("BYE");
+            $self->output->infof("BYE");
             $self->_done(1);
             return 1;
         },
