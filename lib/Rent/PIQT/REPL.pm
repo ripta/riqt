@@ -541,13 +541,13 @@ sub run_repl {
 
         if (eval { $self->process(\$buffer, $line) }) {
             $self->_prompt($self->db->auth_info . '> ');
+            $self->output->println;
         } elsif ($@) {
             $self->output->errorf("Error at <INTERACTIVE> line %d:\n\t%s", $lineno, $self->sanitize_death($@));
+            $self->output->println;
         } else {
             $self->_prompt('+> ');
         }
-
-        $self->output->println;
     }
 
     # Touch the cache (?)
