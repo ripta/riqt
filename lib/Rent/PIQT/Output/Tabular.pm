@@ -26,34 +26,41 @@ sub start {
 sub finish {
     my ($self) = @_;
 
-    my $fmt_string = "";
+    my $fmt_head = "";
+    my $fmt_rec  = "";
     my @seps = ();
     do {
-        my @fmts = ();
+        my @fmt_head = ();
+        my @fmt_rec  = ();
         foreach my $idx (0..$#{ $self->field_sizes}) {
             my $type = lc $self->fields->[$idx]->{'type'};
             if ($type eq 'str') {
-                push @fmts, '%-' . $self->field_sizes->[$idx] . 's';
+                push @fmt_head, '%-' . $self->field_sizes->[$idx] . 's';
+                push @fmt_rec,  '%-' . $self->field_sizes->[$idx] . 's';
             } elsif ($type eq 'int') {
-                push @fmts, '%' . $self->field_sizes->[$idx] . 's';
+                push @fmt_head, '%' . $self->field_sizes->[$idx] . 's';
+                push @fmt_rec,  '%' . $self->field_sizes->[$idx] . 's';
             } elsif ($type eq 'float') {
-                push @fmts, '%' . $self->field_sizes->[$idx] . 'f';
+                push @fmt_head, '%' . $self->field_sizes->[$idx] . 's';
+                push @fmt_rec,  '%' . $self->field_sizes->[$idx] . 'f';
             } else {
                 # bitflag, bool, date
-                push @fmts, '%-' . $self->field_sizes->[$idx] . 's';
+                push @fmt_head, '%-' . $self->field_sizes->[$idx] . 's';
+                push @fmt_rec,  '%-' . $self->field_sizes->[$idx] . 's';
             }
 
             push @seps, '=' x $self->field_sizes->[$idx];
         }
 
-        $fmt_string = join(' ', @fmts);
+        $fmt_head = join(' ', @fmt_head);
+        $fmt_rec  = join(' ', @fmt_rec);
     };
 
     $self->println;
-    $self->printlnf($fmt_string, map { $_->{'name'} } @{ $self->fields });
-    $self->printlnf($fmt_string, @seps);
+    $self->printlnf($fmt_head, map { $_->{'name'} } @{ $self->fields });
+    $self->printlnf($fmt_head, @seps);
     foreach my $record (@{$self->records}) {
-        $self->printlnf($fmt_string, map { defined($_) ? $_ : '(null)' } @$record);
+        $self->printlnf($fmt_rec, map { defined($_) ? $_ : '(null)' } @$record);
     }
 
 }
