@@ -32,20 +32,25 @@ sub KEYS {
     return keys %{ $self->{'kv'} };
 }
 
-# Set the namespace according to the database data source name.
+# Perform custom setting up after the controller and all components are ready.
 sub POSTBUILD {
     my ($self) = @_;
 
+    # Debug information for all cache keys
     $self->controller->output->debugf("Loaded %d %s into cache: %s",
         scalar($self->KEYS),
         scalar($self->KEYS) == 1 ? 'key' : 'keys',
         join(', ', $self->KEYS),
     );
 
+    # Set cache namespace and set a special key (/current) to the current
+    # database's auth info
     $self->controller->output->debugf("Setting cache namespace to %s", $self->controller->db->auth_info);
     $self->namespace($self->controller->db->auth_info);
     $self->set('/current', $self->controller->db->auth_info);
 
+    # Register listener for SHOW CACHE internal command, which can also take
+    # a string argument to filter out the list
     $self->controller->register('show cache',
         sub {
             my ($ctrl, $args) = @_;
