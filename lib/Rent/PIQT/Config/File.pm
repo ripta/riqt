@@ -71,6 +71,9 @@ around POSTBUILD => sub {
     };
 
     # Process the configuration file, looking for lines starting with 'SET'
+    # The $self->controller->execute cannot be called here, because POSTBUILD
+    # in the base config needs to run after settings are loaded, but that's
+    # where internal commands are usually registered
     my $lineno = 0;
     while (my $line = <$fh>) {
         $lineno++;

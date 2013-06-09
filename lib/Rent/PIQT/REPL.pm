@@ -309,6 +309,8 @@ sub execute {
         $self->output->debugf("    Execute  : %s(%s)", $command_name, $args ? quote(printable($args)) : '');
         return $self->_commands->{$command_name}->($self, $args);
     }
+
+    return 0;
 }
 
 sub internal_commands {
