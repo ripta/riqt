@@ -648,7 +648,7 @@ sub sanitize_death {
     my ($self, $str) = @_;
     return $str if $self->verbose >= 2;
 
-    $str =~ s/ at \S+ line \d+.\s*//g;
+    $str =~ s/ at \S+ line \d+\.?\s*//g;
     return $str;
 }
 
