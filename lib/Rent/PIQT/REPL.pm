@@ -378,10 +378,10 @@ sub process {
         if ($@) {
             my $errstr = $@;
             $errstr =~ s/ at \S+ line \d+.\s*//;
-            $self->output->error($errstr);
-            $self->output->println;
+            # $self->output->error($errstr);
+            # $self->output->println;
             $$buffer = '';
-            return 2;
+            die $errstr;
         }
 
         # Display a continuation prompt if the query isn't already complete
@@ -483,7 +483,7 @@ sub run_file {
 
         eval { $self->process(\$buffer, $line) };
         if ($@) {
-            $self->output->errorf("Cannot process file %s: died at line %d", quote($file), $lineno);
+            $self->output->errorf("Process died at %s line %d", $file, $lineno);
             $self->output->errorf("    %s", $@);
             close $fh;
             return;
@@ -502,10 +502,12 @@ sub run_query {
     $self->output->debugf("Running single query (%d lines)", scalar(@lines));
 
     my $buffer = '';
+    my $lineno = 0;
     while (my $line = shift @lines) {
+        $lineno++;
         eval { $self->process(\$buffer, $line) };
         if ($@) {
-            $self->output->error($@);
+            $self->output->errorf("%s at <STDIN> line %d", $@, $lineno);
             return 0;
         }
     }
@@ -516,6 +518,7 @@ sub run_query {
 # Start an interactive session on the current database driver.
 sub run_repl {
     my ($self) = @_;
+    my $lineno = 0;
 
     # Set the default prompt to the database's data source name
     $self->output->debugf("Entering interactive mode for resource %s", quote($self->db->auth_info));
@@ -524,6 +527,8 @@ sub run_repl {
     # Loop until we're told to exit
     my $buffer = '';
     while (!$self->_done) {
+        $lineno++;
+
         # Read a single line from the terminal
         my $line = $self->_term->readline($self->_prompt);
         last unless defined $line;
@@ -531,7 +536,7 @@ sub run_repl {
         if (eval { $self->process(\$buffer, $line) }) {
             $self->_prompt($self->db->auth_info . '> ');
         } elsif ($@) {
-            $self->output->error($@);
+            $self->output->errorf("%s at <STDIN> line %d", $@, $lineno);
         } else {
             $self->_prompt('+> ');
         }
