@@ -675,7 +675,6 @@ sub sanitize_death {
 # Timing tick in milliseconds since start of object.
 sub tick {
     my ($self) = @_;
-    $self->{'start'} = [ gettimeofday ];
     return tv_interval($self->{'start'}) * 1000;
 }
 
