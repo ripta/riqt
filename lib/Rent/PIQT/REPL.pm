@@ -332,7 +332,13 @@ sub load_plugin {
 
     if ($plugin) {
         $self->output->debugf("Loaded plugin %s", quote($plugin));
-        $plugin->new(controller => $self);
+        eval { $plugin->new(controller => $self) };
+        if ($@) {
+            $self->output->errorf("Cannot instantiate plugin '%s':\n\t%s",
+                $plugin_name,
+                $@ || 'unknown error in ' . __PACKAGE__ . ' line ' . __LINE__,
+            );
+        }
     } else {
         $self->output->errorf("Cannot load plugin '%s':\n\t%s",
             $plugin_name,
