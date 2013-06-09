@@ -58,6 +58,26 @@ around POSTBUILD => sub {
         },
     );
 
+    $self->controller->register('date', 'time',
+        sub {
+            my ($ctrl) = @_;
+            my $tick = int($ctrl->tick * 1000);
+            my $sql = qq{
+                SELECT 'database' origin, TO_CHAR(SYSDATE) value FROM DUAL
+                UNION
+                SELECT 'piqt_tick', TO_CHAR($tick) FROM DUAL
+            };
+
+            if ($self->do($sql)) {
+                $self->display($ctrl->output);
+            } else {
+                $ctrl->output->error($self->last_error);
+            }
+
+            return 1;
+        },
+    );
+
     $self->controller->register('explain', 'explain plan', 'explain plan for',
         sub {
             my ($ctrl, $query) = @_;
