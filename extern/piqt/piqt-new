@@ -189,6 +189,10 @@ $repl->load_plugin('Transactional');
 
 $repl->run($sql);
 
+if (@rest) {
+    $repl->output->warnf("Too many command line arguments were given.");
+}
+
 exit();
 
 __END__
