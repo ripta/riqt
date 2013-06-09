@@ -130,6 +130,26 @@ our $REGISTERED = {
 
 sub BUILD {
     my ($self) = @_;
+
+    $self->controller->register('spool',
+        sub {
+            my ($ctrl, $args) = @_;
+
+            if ($args) {
+                $args =~ s/^\s+//;
+                $args =~ s/\s+$//;
+                if ($args =~ /^OFF$/i) {
+                    $self->spool(undef);
+                } elsif ($args =~ /^OUT$/i) {
+                    $self->spool(undef);
+                } else {
+                    $self->spool($args);
+                }
+            } else {
+                $self->output->infof("Spool is set to ", $self->spool);
+            }
+        },
+    );
 }
 
 1;
