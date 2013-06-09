@@ -42,9 +42,9 @@ sub POSTBUILD {
         join(', ', $self->KEYS),
     );
 
-    $self->controller->output->debugf("Setting cache namespace to %s", $self->controller->db->dsn);
-    $self->namespace($self->controller->db->dsn);
-    $self->set('/current', $self->controller->db->dsn);
+    $self->controller->output->debugf("Setting cache namespace to %s", $self->controller->db->auth_info);
+    $self->namespace($self->controller->db->auth_info);
+    $self->set('/current', $self->controller->db->auth_info);
 
     $self->controller->register('show cache',
         sub {

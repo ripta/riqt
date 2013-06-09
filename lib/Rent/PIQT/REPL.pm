@@ -518,8 +518,8 @@ sub run_repl {
     my ($self) = @_;
 
     # Set the default prompt to the database's data source name
-    $self->output->debugf("Entering interactive mode for resource %s", quote($self->db->dsn));
-    $self->_prompt($self->db->dsn . '> ');
+    $self->output->debugf("Entering interactive mode for resource %s", quote($self->db->auth_info));
+    $self->_prompt($self->db->auth_info . '> ');
 
     # Loop until we're told to exit
     my $buffer = '';
@@ -529,7 +529,7 @@ sub run_repl {
         last unless defined $line;
 
         if (eval { $self->process(\$buffer, $line) }) {
-            $self->_prompt($self->db->dsn . '> ');
+            $self->_prompt($self->db->auth_info . '> ');
         } elsif ($@) {
             $self->output->error($@);
         } else {

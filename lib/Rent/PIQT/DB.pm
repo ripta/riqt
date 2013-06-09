@@ -198,6 +198,15 @@ sub do {
 
 sub dsn {
     my ($self) = @_;
+    my $class = ref $self;
+    $class =~ s/.*:://;
+    return $self->username ?
+        sprintf("%s://%s?username=%s", lc($class), $self->database, $self->username) :
+        sprintf("%s://%s", lc($class), $self->database);
+}
+
+sub auth_info {
+    my ($self) = @_;
     return $self->username
             ? sprintf('%s@%s', lc $self->username, lc $self->database)
             : lc $self->database;
