@@ -8,6 +8,7 @@ use Data::Dumper;
 use Rent::PIQT::Util;
 use String::Escape qw/quote printable/;
 use Term::ReadLine;
+use Time::HiRes qw/gettimeofday tv_interval/;
 
 our $VERSION = '0.5.0';
 
@@ -227,6 +228,8 @@ sub _build__term {
 # which is why it's placed here.
 sub BUILD {
     my ($self) = @_;
+    $self->{'plugins'} ||= {};
+    $self->{'start'} = [ gettimeofday ];
 
     # Run each component's POSTBUILD method
     foreach my $name (qw/cache config db output/) {
@@ -602,6 +605,13 @@ sub sanitize_death {
 
     $str =~ s/ at \S+ line \d+.\s*//g;
     return $str;
+}
+
+# Timing tick in milliseconds since start of object.
+sub tick {
+    my ($self) = @_;
+    $self->{'start'} = [ gettimeofday ];
+    return tv_interval($self->{'start'}) * 1000;
 }
 
 # Return $VERSION
