@@ -1,4 +1,9 @@
-package Rent::PIQT::SqlPlusCompatibility;
+package Rent::PIQT::Plugin::SqlPlusCompatibility;
+
+use Moo;
+use Rent::PIQT::Util;
+
+with 'Rent::PIQT::Plugin';
 
 our $REGISTERED = {
     appinfo     => sub {
@@ -122,5 +127,9 @@ our $REGISTERED = {
     # verify
     # wrap
 };
+
+sub BUILD {
+    my ($self) = @_;
+}
 
 1;
