@@ -572,6 +572,9 @@ sub run_repl {
     }
 }
 
+# Sanitize die/warn() messages caught by eval{}. In debug mode, the string
+# is left as-is. Otherwise, any filenames and line numbers in the string is
+# parsed out; even nested ones.
 sub sanitize_death {
     my ($self, $str) = @_;
     return $str if $self->verbose >= 2;
