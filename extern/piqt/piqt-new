@@ -20,7 +20,7 @@ my $format          = undef;
 my $output_file     = undef;
 
 # Startup options
-my $config_driver   = 'file';
+my $config_driver   = '';
 my $startup_file    = '.piqtrc';
 
 # Other options
@@ -38,6 +38,7 @@ GetOptions(
     'o|output=s'                => \$output_file,
 
     'i|ignore-startup-file!'    => sub { $config_driver = 'ignored' },
+    'I'                         => sub { $config_driver = 'file' },
     's|startup-file=s'          => \$startup_file,
 
     'list-drivers'              => \$list_drivers,
@@ -164,6 +165,10 @@ if ($auto_connect) {
 # interpolated queries in the future
 my ($sql, @rest) = @ARGV;
 
+# Dynamically modify the config driver based on if a SQL query was provided or
+# not; this still respects command-line options if one was given
+$config_driver ||= $sql ? 'ignored' : 'file';
+
 # The default format depends on whether we'll end up in interactive mode
 # or not: CSV in non-interactive, and tabular in interactive
 $format ||= $sql ? 'csv' : 'tabular';
@@ -196,6 +201,11 @@ piqt - Perl Interactive Query Tool
 extern/piqt/piqt [opts] [sql]
 
 =head1 OPTIONS
+
+If a one-off [sql] is given on the command line, the provided SQL will be run.
+Otherwise, PIQT enters interactive mode. PIQT will process start-up files by
+default in interactive mode, but skip it in one-off mode. See also the section
+on start-up files below.
 
 Generic options:
 
@@ -239,6 +249,10 @@ Startup options:
   --ignore-startup-file
   -i            Ignore the start-up file ~/.piqtrc, which is useful if your
                 start-up file has errors.
+
+  --no-ignore-startup-file
+  -I            Do not ignore the start-up file, which is useful to apply
+                the start-up file in non-interactive mode.
 
   --startup-file <file>
   -s <file>     Use <file> as the startup file.
