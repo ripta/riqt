@@ -52,6 +52,12 @@ sub BUILDARGS {
 sub POSTBUILD {
     my ($self) = @_;
 
+    $self->controller->output->debugf("Output driver %s is ready: OUT=(%s) ERR=(%s)",
+        ref $self,
+        $self->out ? $self->out->fileno : '',
+        $self->err ? $self->err->fileno : '',
+    );
+
     $self->controller->config->register('mode',
         sub {
             my ($config, $name, $old_value, $new_value) = @_;
