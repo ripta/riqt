@@ -10,6 +10,7 @@ use String::Escape qw/
 
 our @ISA = qw/Exporter/;
 our @EXPORT = qw/
+    indent_lines
     is_double_quoted
     is_regexp_string
     is_single_quoted
@@ -19,6 +20,12 @@ our @EXPORT = qw/
     rstring_to_regexp
 /;
 our @EXPORT_OK = @EXPORT;
+
+sub indent_lines {
+    my ($str, $amt) = @_;
+    $amt ||= 1;
+    return join("\n", map { "    " x $amt . $_ } split(/\r?\n/, $str));
+}
 
 sub is_double_quoted {
     my ($str) = @_;

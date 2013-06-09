@@ -223,6 +223,16 @@ sub _build__term {
     return $t;
 }
 
+sub _verify_buffer {
+    my ($self, $buffer) = @_;
+    return unless $buffer;
+
+    $self->output->warnf("The query buffer contains a query that hasn't been executed:\n%s",
+        indent_lines($buffer),
+    );
+    $self->output->warnf("Possibly the query wasn't properly ended?");
+}
+
 # Execute POSTBUILD on every component. These methods should be run after
 # the controller is fully initialized, and after all triggers have run,
 # which is why it's placed here.
@@ -565,6 +575,8 @@ sub run_file {
         $self->output->println;
     }
 
+    $self->_verify_buffer($buffer);
+
     close $fh;
     $self->output->debugf("Successfully processed %d lines from %s", $lineno, quote($file));
     return;
@@ -586,6 +598,8 @@ sub run_query {
             return 0;
         }
     }
+
+    $self->_verify_buffer($buffer);
 
     return 1;
 }
@@ -618,6 +632,8 @@ sub run_repl {
             $self->_prompt('+> ');
         }
     }
+
+    $self->_verify_buffer($buffer);
 
     # Touch the cache (?)
     # TODO: remove this and make it less error-prone in the future
