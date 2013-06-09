@@ -370,14 +370,12 @@ sub process {
 
         # Skip any blank lines
         if ($$buffer =~ /^\s*$/s) {
-            $self->output->println;
             $$buffer = '';
             return 1;
         }
 
         # Skip any internal commands correctly handled
         if (eval { $self->execute($$buffer) }) {
-            $self->output->println;
             $$buffer = '';
             return 3;
         }
@@ -385,7 +383,6 @@ sub process {
             my $errstr = $@;
             $errstr =~ s/ at \S+ line \d+.\s*//;
             # $self->output->error($errstr);
-            # $self->output->println;
             $$buffer = '';
             die $errstr;
         }
@@ -413,14 +410,12 @@ sub process {
         }
 
         $self->output->finish_timing($row_num || $self->db->rows_affected);
-        $self->output->println;
 
         $$buffer = '';
         return 5;
     } else {
         $self->output->reset_timing;
         $self->output->error($self->db->last_error);
-        $self->output->println;
 
         $$buffer = '';
         return 4;
@@ -493,9 +488,12 @@ sub run_file {
         if ($@) {
             $self->output->errorf("Process died at %s line %d", $file, $lineno);
             $self->output->errorf("    %s", $@);
+            $self->output->println;
             close $fh;
             return;
         }
+
+        $self->output->println;
     }
 
     close $fh;
@@ -548,6 +546,8 @@ sub run_repl {
         } else {
             $self->_prompt('+> ');
         }
+
+        $self->output->println;
     }
 
     # Touch the cache (?)
