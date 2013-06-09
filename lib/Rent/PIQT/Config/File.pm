@@ -43,7 +43,7 @@ sub DEMOLISH {
 
     # Output the configuration lines
     print { $fh } "# Last-Modified: " . time() . "\n";
-    foreach my $key (keys %{$self->{'kv'}}) {
+    foreach my $key (sort keys %{$self->{'kv'}}) {
         printf { $fh } "SET %s %s\n", $key, $self->{'kv'}->{$key};
         $self->controller->output->debugf("SET %s %s", $key, $self->{'kv'}->{$key}) if $self->controller;
     }
@@ -84,7 +84,7 @@ around POSTBUILD => sub {
         }
 
         $self->controller->output->warnf(
-            "Unknown command '%s' in %s line %d",
+            "Unknown command '%s' in %s line %d; ignoring",
             $line,
             $self->filename,
             $lineno,
