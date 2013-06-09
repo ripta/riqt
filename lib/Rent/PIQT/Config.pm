@@ -107,21 +107,30 @@ sub POSTBUILD {
 
             $o->start(
                 [
-                    {name => "Name",  type => "string", length => 255},
-                    {name => "Value", type => "string", length => 4000},
+                    {name => "Name",  type => "str", length => 255},
+                    {name => "Modes", type => "str", length => 3},
+                    {name => "Readable", type => "bool", length => 1},
+                    {name => "Writeable", type => "bool", length => 1},
+                    {name => "Persistable", type => "bool", length => 1},
+                    {name => "Value", type => "str", length => 4000},
                 ]
             );
             if ($name) {
                 if (my $value = $c->$name) {
-                    $o->record([$name, $value]);
+                    my $opts = $c->options_for($name);
+                    $o->record([$name, $opts->{'only'}, $opts->{'read'}, $opts->{'write'}, $opts->{'persist'}, $value]);
                 } else {
                     foreach my $key (sort $c->KEYS) {
-                        $o->record([$key, $c->$key]) if $key =~ /$name/i;
+                        next unless $key =~ /\Q$name\E/i;
+
+                        my $opts = $c->options_for($key);
+                        $o->record([$key, $opts->{'only'}, $opts->{'read'}, $opts->{'write'}, $opts->{'persist'}, $c->$key]);
                     }
                 }
             } else {
                 foreach my $key (sort $c->KEYS) {
-                    $o->record([$key, $c->$key]);
+                    my $opts = $c->options_for($key);
+                    $o->record([$key, $opts->{'only'}, $opts->{'read'}, $opts->{'write'}, $opts->{'persist'}, $c->$key]);
                 }
             }
             $o->finish;
