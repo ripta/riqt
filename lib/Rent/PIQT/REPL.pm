@@ -255,7 +255,8 @@ sub BUILD {
     # driver can load a different verbose setting, which we don't want sticking
     $self->config->verbose($self->verbose);
     $self->config->register('verbose',
-        sub {
+        only => 'i',
+        hook => sub {
             my ($config, $name, $old_value, $new_value) = @_;
             $config->controller->verbose(int($new_value));
         },

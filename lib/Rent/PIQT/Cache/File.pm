@@ -50,7 +50,7 @@ around POSTBUILD => sub {
     my ($orig, $self) = @_;
     $self->$orig;
     $self->controller->config->cache_device($self->filename);
-    $self->controller->config->register('cache_device', -1);
+    $self->controller->config->register('cache_device', write => 0);
 };
 
 around save => sub {

@@ -59,7 +59,8 @@ sub POSTBUILD {
     );
 
     $self->controller->config->register('mode',
-        sub {
+        only => 'i',
+        hook => sub {
             my ($config, $name, $old_value, $new_value) = @_;
             $config->controller->output([
                 $new_value,

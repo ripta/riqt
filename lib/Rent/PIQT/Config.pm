@@ -25,6 +25,10 @@ sub AUTOLOAD {
 
         if (exists($self->{'kv'}->{$name})) {
             return if $self->{'kv'}->{$name} eq $value;
+
+            unless ($self->{'opts'}->{$name}->{'write'}) {
+                die "Read-only: configuration '$name' cannot be written to";
+            }
         }
 
         my @hook_args = (
@@ -57,6 +61,7 @@ sub AUTOLOAD {
 sub BUILD {
     my ($self) = @_;
 
+    $self->{'opts'}     ||= { };
     $self->{'kv'}               ||= { };
     $self->{'hooks'}            ||= { };
     $self->{'pending_hooks'}    ||= { };
@@ -126,23 +131,48 @@ sub POSTBUILD {
     );
 }
 
+# register($command, $hook);
+# register($command, hook => $hook, only => 'fio');
+# where 'fio' = 'file', 'interactive', and 'one-off'
 sub register {
-    my ($self, $command, $hook) = @_;
-    $command = lc $command;
+    my ($self, @args) = @_;
+    my $command = lc shift @args;
+    my $hook    = undef;
+    my %opts    = ();
 
-    die "Hook for config setting '$command' cannot be empty" unless $hook;
+    @args = @{$args[0]} if ref $args[0] eq 'ARRAY';
+    $hook = shift @args if ref $args[0] eq 'CODE';
 
-    unless (ref $hook eq 'CODE') {
+    if (scalar(@args) % 2 == 0) {
+        %opts = @args;
+        if (exists $opts{'hook'}) {
+            die "Cannot specify both a CODEREF and 'hook' option for config setting '$command'" if $hook;
+            $hook = delete $opts{'hook'};
+        }
+    }
+
+    $opts{'only'}     ||= 'fio';
+    $opts{'write'}      = 1 unless exists $opts{'write'};
+    #$opts{'read'}       = 1 unless exists $opts{'read'};
+    $opts{'catch_up'}   = 1 unless exists $opts{'catch_up'};
+    $opts{'persist'}    = 1 unless exists $opts{'persist'};
+
+    unless ($opts{'write'}) {
         $hook = sub {
             die "Read-only: the config setting '$command' cannot be modified from the console";
         };
-        delete $self->{'pending_hooks'}->{$command};
+        $opts{'catch_up'} = 0;
     }
 
-    $self->controller->output->debugf("Registering config hook for %s => %s",
+    die "Hook for config setting '$command' cannot be empty" unless $hook;
+
+    $self->controller->output->debugf("Registering config hook for %s => %s with options (%s)",
         quote($command),
         $hook,
+        join(", ", map { $_ . ' => ' . $opts{$_} } sort keys %opts),
     );
+
+    $self->{'opts'}->{$command} = { %opts };
 
     $self->{'hooks'}->{$command} ||= [ ];
     push @{ $self->{'hooks'}->{$command} }, $hook;
@@ -154,6 +184,9 @@ sub run_pending_hooks {
     my ($self) = @_;
 
     foreach my $name (keys %{$self->{'pending_hooks'}}) {
+        next unless exists $self->{'opts'}->{$name};
+        next unless $self->{'opts'}->{$name}->{'catch_up'};
+
         my $args = $self->{'pending_hooks'}->{$name};
         if (exists $self->{'hooks'}->{$name} && ref $self->{'hooks'}->{$name} eq 'ARRAY') {
             $self->controller->output->debugf("Running %s for %s",
