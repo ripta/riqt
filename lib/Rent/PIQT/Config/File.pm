@@ -44,6 +44,8 @@ sub DEMOLISH {
     # Output the configuration lines
     print { $fh } "# Last-Modified: " . time() . "\n";
     foreach my $key (sort keys %{$self->{'kv'}}) {
+        next unless $self->{'opts'}->{$key}->{'persist'};
+
         printf { $fh } "SET %s %s\n", $key, $self->{'kv'}->{$key};
         $self->controller->output->debugf("SET %s %s", $key, $self->{'kv'}->{$key}) if $self->controller;
     }
