@@ -248,6 +248,21 @@ sub BUILD {
         },
     );
 
+    # Register "load plugin" command now that logging and components are
+    # all set up and ready
+    $self->register('load plugin',
+        sub {
+            my ($ctrl, $args) = @_;
+            my $name = parse_argument_string($args);
+
+            if ($ctrl->load_plugin($name)) {
+                $ctrl->output->okf("Plugin %s loaded successfully", quote($name));
+            }
+
+            return 1;
+        },
+    );
+
     # Register > command to forward the result set
     $self->register('>',
         sub {
@@ -343,12 +358,16 @@ sub load_plugin {
                 $plugin_name,
                 $@ || 'unknown error in ' . __PACKAGE__ . ' line ' . __LINE__,
             );
+            return 0;
         }
+
+        return 1;
     } else {
         $self->output->errorf("Cannot load plugin '%s':\n\t%s",
             $plugin_name,
             $@ || 'unknown error in ' . __PACKAGE__ . ' line ' . __LINE__,
         );
+        return 0;
     }
 }
 
