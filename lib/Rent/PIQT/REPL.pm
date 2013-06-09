@@ -260,6 +260,7 @@ sub BUILD {
             my ($config, $name, $old_value, $new_value) = @_;
             $config->controller->verbose(int($new_value));
         },
+        persist => 0,
     );
 
     # Register "load plugin" command now that logging and components are
