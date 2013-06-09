@@ -352,7 +352,7 @@ sub process {
     # If the last line is '/', then re-execute the buffer, which means
     # we need to skip appending to the query and checking for internal
     # command execution; anything that starts with @ is a file
-    if ($$buffer eq '' && $line =~ /^@(\S+)/) {
+    if ($$buffer eq '' && $line =~ /^@@?\s*(\S+)/) {
         $self->output->debugf("Executing %s, if available", quote($1));
         $self->run_file($1);
         return 3;
