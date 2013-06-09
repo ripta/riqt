@@ -104,7 +104,9 @@ sub POSTBUILD {
             my ($self, $name) = @_;
             my $c = $self->config;
             my $o = $self->output;
+            my $rows = 0;
 
+            $o->start_timing;
             $o->start(
                 [
                     {name => "Name",  type => "str", length => 255},
@@ -119,9 +121,11 @@ sub POSTBUILD {
                 if (my $value = $c->$name) {
                     my $opts = $c->options_for($name);
                     $o->record([$name, $opts->{'only'}, $opts->{'read'}, $opts->{'write'}, $opts->{'persist'}, $value]);
+                    $rows++;
                 } else {
                     foreach my $key (sort $c->KEYS) {
                         next unless $key =~ /\Q$name\E/i;
+                        $rows++;
 
                         my $opts = $c->options_for($key);
                         $o->record([$key, $opts->{'only'}, $opts->{'read'}, $opts->{'write'}, $opts->{'persist'}, $c->$key]);
@@ -129,11 +133,14 @@ sub POSTBUILD {
                 }
             } else {
                 foreach my $key (sort $c->KEYS) {
+                    $rows++;
+
                     my $opts = $c->options_for($key);
                     $o->record([$key, $opts->{'only'}, $opts->{'read'}, $opts->{'write'}, $opts->{'persist'}, $c->$key]);
                 }
             }
             $o->finish;
+            $o->finish_timing($rows);
 
             return 1;
         }
