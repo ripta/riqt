@@ -5,6 +5,7 @@ use Moo;
 use Carp;
 use Class::Load qw/try_load_class/;
 use Data::Dumper;
+use Rent::PIQT::Util;
 use String::Escape qw/quote printable/;
 use Term::ReadLine;
 
@@ -380,11 +381,8 @@ sub process {
             return 3;
         }
         if ($@) {
-            my $errstr = $@;
-            $errstr =~ s/ at \S+ line \d+.\s*//;
-            # $self->output->error($errstr);
             $$buffer = '';
-            die $errstr;
+            die $@;
         }
 
         # Display a continuation prompt if the query isn't already complete
@@ -487,7 +485,7 @@ sub run_file {
         eval { $self->process(\$buffer, $line) };
         if ($@) {
             $self->output->errorf("Process died at %s line %d", $file, $lineno);
-            $self->output->errorf("    %s", $@);
+            $self->output->errorf("    %s", $self->sanitize_death($@));
             $self->output->println;
             close $fh;
             return;
@@ -513,7 +511,7 @@ sub run_query {
         $lineno++;
         eval { $self->process(\$buffer, $line) };
         if ($@) {
-            $self->output->errorf("%s at <STDIN> line %d", $@, $lineno);
+            $self->output->errorf("Error at <STDIN> line %d:\n\t%s", $lineno, $self->sanitize_death($@));
             return 0;
         }
     }
@@ -542,7 +540,7 @@ sub run_repl {
         if (eval { $self->process(\$buffer, $line) }) {
             $self->_prompt($self->db->auth_info . '> ');
         } elsif ($@) {
-            $self->output->errorf("%s at <STDIN> line %d", $@, $lineno);
+            $self->output->errorf("Error at <INTERACTIVE> line %d:\n\t%s", $lineno, $self->sanitize_death($@));
         } else {
             $self->_prompt('+> ');
         }
@@ -570,6 +568,14 @@ sub run_repl {
             }
         }
     }
+}
+
+sub sanitize_death {
+    my ($self, $str) = @_;
+    return if $self->verbose >= 2;
+
+    $str =~ s/ at \S+ line \d+.\s*//g;
+    return $str;
 }
 
 # Return $VERSION
