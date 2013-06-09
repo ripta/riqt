@@ -293,20 +293,20 @@ sub execute {
     $command =~ s/;$//;
     return unless $self->_commands;
 
-    my @commands = sort { length($b) <=> length($a) } keys %{ $self->_commands };
+    my @commands = sort { length($b) <=> length($a) || $a cmp $b } keys %{ $self->_commands };
     my @matches = grep { $command =~ /^\Q$_\E/i } @commands;
 
     if (scalar(@matches)) {
-        $self->output->debugf("Execute internal command");
-        $self->output->debugf("Sort-cand: %s", join(", ", @commands));
-        $self->output->debugf("Matches  : %s", join(", ", @matches));
+        $self->output->debugf("Execute internal command:");
+        $self->output->debugf("    Sort-cand: %s", join(", ", @commands));
+        $self->output->debugf("    Matches  : %s", join(", ", @matches));
 
         my $command_name = $matches[0];
         my $args = $command;
         $args =~ s/^\Q$command_name\E//i;
         $args =~ s/^\s+//;
 
-        $self->output->debugf("Execute  : %s(%s)", $command_name, $args ? quote(printable($args)) : '');
+        $self->output->debugf("    Execute  : %s(%s)", $command_name, $args ? quote(printable($args)) : '');
         return $self->_commands->{$command_name}->($self, $args);
     }
 }
@@ -368,7 +368,7 @@ sub process {
     } elsif ($line eq '/') {
         $self->output->debugf("Re-executing buffer, if available");
     } else {
-        $self->output->debugf("Read: %s", printable($line));
+        $self->output->debugf("Read: %s", quote(printable($line)));
         $$buffer .= $line;
 
         # Skip any blank lines

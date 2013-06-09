@@ -140,14 +140,14 @@ sub BUILD {
                 $args =~ s/\s+$//;
 
                 if ($args =~ /^OFF$/i) {
-                    $self->spool(undef);
+                    $ctrl->output->okf("Spooling is now OFF");
                 } elsif ($args =~ /^OUT$/i) {
-                    $self->spool(undef);
+                    $ctrl->output->okf("Spooling redirected to STDOUT");
                 } else {
-                    $self->spool($args);
+                    $ctrl->output->okf("Spooling redirected to %s", quote($args));
                 }
             } else {
-                $self->output->infof("Spool is set to ", $self->spool);
+                $ctrl->output->infof("Spool is set to %s", quote(''));
             }
         },
     );

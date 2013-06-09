@@ -139,6 +139,11 @@ sub register {
         delete $self->{'pending_hooks'}->{$command};
     }
 
+    $self->controller->output->debugf("Registering config hook for %s => %s",
+        quote($command),
+        $hook,
+    );
+
     $self->{'hooks'}->{$command} ||= [ ];
     push @{ $self->{'hooks'}->{$command} }, $hook;
 
@@ -152,7 +157,7 @@ sub run_pending_hooks {
         my $args = $self->{'pending_hooks'}->{$name};
         if (exists $self->{'hooks'}->{$name} && ref $self->{'hooks'}->{$name} eq 'ARRAY') {
             $self->controller->output->debugf("Running %s for %s",
-                pluralize(scalar(@{ $self->{'hooks'}->{$name} }), 'pending hook', 'pending hooks'),
+                pluralize(scalar(@{ $self->{'hooks'}->{$name} }), 'pending config hook', 'pending config hooks'),
                 quote($name),
             );
             foreach my $hook (@{ $self->{'hooks'}->{$name} }) {
