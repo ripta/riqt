@@ -22,7 +22,7 @@ has 'is_interactive' => (
     required => 0,
 );
 sub _build_is_interactive {
-    return -t select;
+    return -t $_[0]->err;
 }
 
 has 'start_time', (is => 'rw');
