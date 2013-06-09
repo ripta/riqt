@@ -386,6 +386,13 @@ sub load_plugin {
     }
 
     if ($plugin) {
+        if (exists $self->{'plugins'}->{$plugin}) {
+            $self->output->warnf("Plugin %s has already been loaded",
+                quote($plugin_name),
+            );
+            return 0;
+        }
+
         $self->output->debugf("Loaded plugin %s", quote($plugin));
         my $instance = eval { $plugin->new(controller => $self) };
         if ($@) {
