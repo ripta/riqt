@@ -15,9 +15,9 @@ our $VERSION = '0.5.0';
 sub _generate_isa_for {
     my ($name) = @_;
     return sub {
-        die "'" . lc($name) . "' attribute of Rent::PIQT::REPL is required" unless $_[0];
+        die "The '" . lc($name) . "' attribute of Rent::PIQT::REPL is required" unless $_[0];
         my $info = ref($_[0]) || $_[0];
-        die "'" . lc($name) . "' attribute of Rent::PIQT::REPL, which is a '$info' must implement Rent::PIQT::$name" unless $_[0]->does("Rent::PIQT::$name") || $_[0]->isa("Rent::PIQT::$name");
+        die "The '" . lc($name) . "' attribute of Rent::PIQT::REPL, which is a '$info' must implement Rent::PIQT::$name" unless $_[0]->does("Rent::PIQT::$name") || $_[0]->isa("Rent::PIQT::$name");
     };
 }
 
