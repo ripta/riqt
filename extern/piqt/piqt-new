@@ -58,7 +58,7 @@ if ($list_drivers) {
         my $compdir  = "$baseloc/$compfile";
 
         print STDERR "Supported $human_name drivers",
-                ($set_cmd ? " (can be set using '$set_cmd')" : ""), ":\n";
+                ($set_cmd ? " (can also be set using '$set_cmd')" : ""), ":\n";
 
         opendir my $dh, $compdir;
         while (readdir $dh) {
