@@ -3,6 +3,7 @@ package Rent::PIQT::DB::Oracle;
 use DBI;
 use List::Util qw/max/;
 use Moo;
+use String::Escape qw/singlequote/;
 
 with "Rent::PIQT::DB";
 
@@ -159,6 +160,48 @@ around POSTBUILD => sub {
                     }
                 },
             );
+
+            return 1;
+        },
+    );
+
+    $self->controller->register('show invalid',
+        sub {
+            my ($ctrl, $args) = @_;
+            my @where_clauses = ();
+
+            my ($type, $like_name) = split /\s+LIKE\s+/i, $args, 2;
+
+            push @where_clauses, "object_type = " . singlequote(uc($type)) if $type;
+
+            if ($like_name) {
+                if (is_single_quoted($like_name)) {
+                    push @where_clauses, "object_name LIKE " . uc($like_name);
+                } else {
+                    die "Syntax error: expected LIKE to be followed by a single-quoted string";
+                }
+            }
+
+            my $where_clause = @where_clauses ? "AND " . join("\nAND ", @where_clauses) : "";
+            my $sql = qq{
+                SELECT
+                    owner,
+                    object_name,
+                    object_type,
+                    status
+                FROM
+                    dba_objects
+                WHERE
+                    status <> 'VALID'
+                AND owner NOT IN ('SYSTEM', 'SYS', 'XDB')
+                    $where_clause
+            };
+
+            if ($self->do($sql)) {
+                $self->display($ctrl->output);
+            } else {
+                $ctrl->output->error($self->last_error);
+            }
 
             return 1;
         },
