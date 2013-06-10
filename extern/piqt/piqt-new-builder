@@ -28,7 +28,7 @@ my %files;
 foreach my $dir (@dirs) {
     find(sub {
         return unless -f $_;
-        $File::Find::name =~ /PIQT/ or return;
+        $File::Find::name =~ /PIQT/ or $dir =~ /fat/ or return;
         !/\.pm$/ and return;
         print STDERR "INCLUDE ${File::Find::name}\n";
         $files{File::Spec::Unix->abs2rel($File::Find::name,$dir)} = do {
