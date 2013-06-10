@@ -37,6 +37,11 @@ sub AUTOLOAD {
             exists($self->{'kv'}->{$name}) ? $self->{'kv'}->{$name} : undef,
             $value,
         );
+        $self->controller->output->debugf("Setting config value for %s to %s with hook arguments: %s",
+            quote(printable($name)),
+            quote(printable($value)),
+            '(' . join(", ", map { quote(printable($_)) } @hook_args) . ')',
+        );
 
         if (exists $self->{'hooks'}->{$name} && ref $self->{'hooks'}->{$name} eq 'ARRAY') {
             foreach my $hook (@{ $self->{'hooks'}->{$name} }) {
