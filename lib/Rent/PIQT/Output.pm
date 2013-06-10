@@ -72,6 +72,8 @@ sub POSTBUILD {
 
 sub colorize {
     my ($self, $msg, $color) = @_;
+    $msg = '[' . sprintf("%12.3f", $self->controller->tick) . '] ' . $msg if $self->controller && $self->controller->verbose >= 3;
+
     return $msg unless $self->is_interactive;
     return $msg unless $self->controller->config->colors;
 
