@@ -10,6 +10,7 @@ use Class::Load qw/try_load_class/;
 use Rent::PIQT::REPL;
 
 # Global options
+our $FATPACKED;
 my $help = undef;
 my $verbose = 0;
 
@@ -45,7 +46,14 @@ GetOptions(
 ) or pod2usage(2);
 pod2usage(1) if $help;
 
+# List all available drivers.
+# TODO: Make this work with FATPACKed PIQT.
 if ($list_drivers) {
+    if (defined $FATPACKED) {
+        print STDERR "--list-drivers does not currently work correctly for FATPACKED files\n";
+        exit 1;
+    }
+
     my $basefile = 'Rent/PIQT';
     my $replfile = $basefile . '/REPL.pm';
     my $replloc  = $INC{$replfile} || die "Cannot detect location of Rent::PIQT::REPL";

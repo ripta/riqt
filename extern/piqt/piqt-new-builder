@@ -52,7 +52,7 @@ my $header = qq!#
 
 # Build information
 BEGIN {
-    our \$FATPACK_BUILD = 'YES';
+    our \$FATPACKED = 'YES';
     our \$FATPACK_BUILD_DATE = '$build_date';
 }
 !;

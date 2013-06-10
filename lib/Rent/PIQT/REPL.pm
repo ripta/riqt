@@ -10,7 +10,7 @@ use String::Escape qw/quote printable/;
 use Term::ReadLine;
 use Time::HiRes qw/gettimeofday tv_interval/;
 
-our $VERSION = '0.5.0';
+our $VERSION = '0.5.1';
 
 # Generate the 'isa' clause for some 'has' below.
 sub _generate_isa_for {
