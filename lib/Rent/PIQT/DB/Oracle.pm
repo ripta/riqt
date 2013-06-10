@@ -79,8 +79,9 @@ around POSTBUILD => sub {
         },
     );
 
-    $self->controller->register('explain', 'explain plan', 'explain plan for',
-        sub {
+    $self->controller->register('explain', 'explain plan', 'explain plan for', {
+        signature => "%s query",
+        code => sub {
             my ($ctrl, $query) = @_;
 
             my $stmt_id = sprintf('%s:%02d%04d', $ENV{'USER'}, $$ % 100, time % 10000);
@@ -134,10 +135,11 @@ around POSTBUILD => sub {
             $self->display($ctrl->output) if $self->do($retrieve_sql);
             return 1;
         },
-    );
+    });
 
-    $self->controller->register('show create',
-        sub {
+    $self->controller->register('show create', {
+        signature => "%s TABLE|VIEW|FUNCTION|PROCEDURE name",
+        code => sub {
             my ($ctrl, $arg) = @_;
             $arg = uc $arg;
 
@@ -163,10 +165,11 @@ around POSTBUILD => sub {
 
             return 1;
         },
-    );
+    });
 
-    $self->controller->register('show invalid',
-        sub {
+    $self->controller->register('show invalid', {
+        signature => "%s [TABLE|VIEW|FUNCTION|PROCEDURE] [LIKE '%%criteria%%']",
+        code => sub {
             my ($ctrl, $args) = @_;
             my @where_clauses = ();
 
@@ -205,7 +208,7 @@ around POSTBUILD => sub {
 
             return 1;
         },
-    );
+    });
 };
 
 # Transform the output of describe_object into something more palatable, which

@@ -9,8 +9,9 @@ with 'Rent::PIQT::Plugin';
 sub BUILD {
     my ($self) = @_;
 
-    $self->controller->register('desc', 'describe',
-        sub {
+    $self->controller->register('desc', 'describe', {
+        signature => "%s name",
+        code => sub {
             my ($ctrl, $args) = @_;
             my ($object_name, $mode, $col_spec) = split /\s+/, $args, 3;
             my $o = $ctrl->output;
@@ -52,7 +53,7 @@ sub BUILD {
 
             return 1;
         },
-    );
+    });
 }
 
 1;

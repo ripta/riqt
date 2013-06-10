@@ -268,17 +268,25 @@ sub BUILD {
             my ($ctrl, $args) = @_;
             my $o = $ctrl->output;
 
+            die "Syntax error: SHOW COMMANDS does not take any arguments" if $args;
+
             $o->start(
                 [
                     {name => "Command",         type => "str", length => 255},
-                    {name => "Registered By",   type => "str", length => 255},
+                    {name => "Signature",       type => "str", length => 1024},
                     {name => "Registered At",   type => "int", length => 20},
+                    $self->verbose >= 2 ? {name => "Registered By",   type => "str", length => 255} : (),
                 ]
             );
 
             foreach my $cmd (sort $self->internal_commands) {
                 my $opts = $self->_commands->{$cmd};
-                $o->record([$cmd, $opts->{'caller_file'} . ':' . $opts->{'caller_line'}, $opts->{'created_at'} * 1000])
+                $o->record([
+                    $cmd,
+                    sprintf($opts->{'signature'}, $cmd),
+                    $opts->{'created_at'} * 1000,
+                    $self->verbose >= 2 ? $opts->{'caller_file'} . ':' . $opts->{'caller_line'} : (),
+                ]);
             }
 
             $o->finish;
@@ -536,22 +544,35 @@ sub process {
 # command arguments as entered in the REPL interface.
 sub register {
     my ($self, @args) = @_;
-    my $code = pop @args;
     my ($c_pkg, $c_file, $c_line) = caller;
 
-    foreach (@args) {
-        if (ref $code eq 'CODE') {
-            $self->output->debugf("Registering internal command %s => %s", quote($_), $code);
-            $self->_commands->{uc($_)} = {
-                code            => $code,
-                caller_package  => $c_pkg,
-                caller_file     => $c_file,
-                caller_line     => $c_line,
-                created_at      => $self->tick,
+    my ($code, $opts);
+    do {
+        my $code_or_opts = pop @args;
+        if (ref $code_or_opts eq 'CODE') {
+            $code = $code_or_opts;
+            $opts = {
+                signature => '%s',
             };
-        } else {
-            $self->output->warnf("Cannot register internal command %s to point to a %s", quote($_), ref($code));
+        } elsif (ref $code_or_opts eq 'HASH') {
+            $opts = $code_or_opts;
+            $code = delete $opts->{'code'};
         }
+    };
+
+    die "Cannot register internal command %s, because no subroutine was given" unless $code;
+    die "Cannot register internal command %s, because the given code is not a subroutine" unless ref $code eq 'CODE';
+
+    foreach (@args) {
+        $self->output->debugf("Registering internal command %s => %s", quote($_), $code);
+        $self->_commands->{uc($_)} = {
+            code            => $code,
+            caller_package  => $c_pkg,
+            caller_file     => $c_file,
+            caller_line     => $c_line,
+            created_at      => $self->tick,
+            signature       => $opts->{'signature'} || '%s',
+        };
     }
 }
 
