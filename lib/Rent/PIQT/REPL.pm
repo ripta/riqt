@@ -263,6 +263,29 @@ sub BUILD {
         persist => 0,
     );
 
+    $self->register('show commands',
+        sub {
+            my ($ctrl, $args) = @_;
+            my $o = $ctrl->output;
+
+            $o->start(
+                [
+                    {name => "Command",         type => "str", length => 255},
+                    {name => "Registered By",   type => "str", length => 255},
+                    {name => "Registered At",   type => "int", length => 20},
+                ]
+            );
+
+            foreach my $cmd (sort $self->internal_commands) {
+                my $opts = $self->_commands->{$cmd};
+                $o->record([$cmd, $opts->{'caller_file'} . ':' . $opts->{'caller_line'}, $opts->{'created_at'} * 1000])
+            }
+
+            $o->finish;
+            return 1;
+        },
+    );
+
     # Register "load plugin" command now that logging and components are
     # all set up and ready
     $self->register('load plugin',
@@ -342,7 +365,8 @@ sub BUILD {
     $self->register('exit', 'quit', '\q',
         sub {
             my ($self) = @_;
-            $self->output->infof("BYE");
+            $self->output->debugf("REPL age is %s", $self->tick);
+            $self->output->info("BYE");
             $self->_done(1);
             return 1;
         },
@@ -369,7 +393,7 @@ sub execute {
         $args =~ s/^\s+//;
 
         $self->output->debugf("    Execute  : %s(%s)", $command_name, $args ? quote(printable($args)) : '');
-        return $self->_commands->{$command_name}->($self, $args);
+        return $self->_commands->{$command_name}->{'code'}->($self, $args);
     }
 
     return 0;
@@ -513,11 +537,18 @@ sub process {
 sub register {
     my ($self, @args) = @_;
     my $code = pop @args;
+    my ($c_pkg, $c_file, $c_line) = caller;
 
     foreach (@args) {
         if (ref $code eq 'CODE') {
             $self->output->debugf("Registering internal command %s => %s", quote($_), $code);
-            $self->_commands->{uc($_)} = $code;
+            $self->_commands->{uc($_)} = {
+                code            => $code,
+                caller_package  => $c_pkg,
+                caller_file     => $c_file,
+                caller_line     => $c_line,
+                created_at      => $self->tick,
+            };
         } else {
             $self->output->warnf("Cannot register internal command %s to point to a %s", quote($_), ref($code));
         }
