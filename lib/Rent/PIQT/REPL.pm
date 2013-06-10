@@ -245,7 +245,7 @@ sub BUILD {
     foreach my $name (qw/cache config db output/) {
         my $attr = $self->$name;
         if ($attr->can('POSTBUILD')) {
-            $self->output->debugf("Running POSTBUILD on %s->%s", $self, $name);
+            $self->output->debugf("Running POSTBUILD on %s", $attr);
             $attr->POSTBUILD;
         }
     }
