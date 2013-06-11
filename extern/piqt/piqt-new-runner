@@ -193,6 +193,7 @@ $repl->load_plugin('DescribeObject');
 $repl->load_plugin('EditQuery');
 $repl->load_plugin('Print');
 $repl->load_plugin('SqlPlusCompatibility');
+$repl->load_plugin('TerseQuery');
 $repl->load_plugin('Transactional');
 
 $repl->run($sql);
