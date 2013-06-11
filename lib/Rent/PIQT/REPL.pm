@@ -388,7 +388,7 @@ sub execute {
     return unless $self->_commands;
 
     my @commands = sort { length($b) <=> length($a) || $a cmp $b } keys %{ $self->_commands };
-    my @matches = grep { $command =~ /^\Q$_\E/i } @commands;
+    my @matches = grep { $command =~ /^\Q$_\E(?:\b|\s+)/i } @commands;
 
     if (scalar(@matches)) {
         $self->output->debugf("Execute internal command:");
