@@ -216,6 +216,7 @@ around POSTBUILD => sub {
 around describe_object => sub {
     my ($orig, $self, $name) = @_;
     my @infos = $self->$orig($name);
+
     return unless @infos;
     return map {
         $_->{'type'} = 'RAW' if $_->{'type_id'} == -2;

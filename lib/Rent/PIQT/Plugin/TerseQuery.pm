@@ -16,6 +16,7 @@ sub BUILD {
         code => sub {
             my ($ctrl, $args) = @_;
             my $o = $ctrl->output;
+
             $o->info('TERSE (EXPANSION=1)');
 
             return 1;

@@ -78,6 +78,8 @@ sub describe_object {
     my ($self, $name) = @_;
     my $o = $self->controller->output;
 
+    # Doing this directly on the driver, because we need access to the statement
+    # handle's attributes
     my $s = $self->driver->prepare("SELECT * FROM $name WHERE 1=2");
     unless ($s) {
         $o->errorf("Cannot DESCRIBE %s: %s",
