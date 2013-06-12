@@ -1,24 +1,53 @@
 package Rent::PIQT::Output::Columnar;
 
 use Moo;
+use Text::Table;
 
 with 'Rent::PIQT::Output';
 
+has sep => (is => 'lazy');
+sub _build_sep {
+    return {
+        is_sep => 1,
+        title  => " \x{2503} ",
+        body   => " \x{2502} "
+    };
+}
+
+has table => (is => 'rw');
 
 sub start {
     my ($self, $fields) = @_;
 
-    foreach my $field (@$fields) {
-        my ($name, $type, $len) = @$field{qw/name type length/};
-    }
+    my @headings = map { ($_->{'name'}, $self->sep) } @$fields;
+    pop @headings if @headings;
+
+    $self->debugf("Adding heading: (%s)", join(', ', @headings));
+    $self->table(Text::Table->new(@headings));
 }
 
 sub finish {
     my ($self) = @_;
+    my $t = $self->table;
+
+    $self->debugf("Printing output table with %d lines", $t->body_height);
+    $self->println;
+
+    foreach ($t->title) {
+        $self->print($_);
+    }
+    $self->print($t->rule("\x{2501}", "\x{2547}"));
+    foreach ($t->body) {
+        $self->print($_);
+    }
+
+    $self->table(undef);
 }
 
 sub record {
     my ($self, $values) = @_;
+    $self->debugf("Added new record with %d values", scalar(@$values));
+    $self->table->add(@$values);
 }
 
 1;
