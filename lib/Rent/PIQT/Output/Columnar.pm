@@ -5,6 +5,8 @@ use Text::Table;
 
 with 'Rent::PIQT::Output';
 
+has record_number => (is => 'rw', default => 0);
+
 has sep => (is => 'lazy');
 sub _build_sep {
     return {
@@ -22,6 +24,8 @@ sub start {
     my @headings = map { ($_->{'name'}, $self->sep) } @$fields;
     pop @headings if @headings;
 
+    $self->record_number(0);
+
     $self->debugf("Adding heading: (%s)", join(', ', @headings));
     $self->table(Text::Table->new(@headings));
 }
@@ -29,6 +33,8 @@ sub start {
 sub finish {
     my ($self) = @_;
     my $t = $self->table;
+    $self->table(undef);
+    return unless $self->record_number > 0;
 
     $self->debugf("Printing output table with %d lines", $t->body_height);
     $self->println;
@@ -40,12 +46,11 @@ sub finish {
     foreach ($t->body) {
         $self->print($_);
     }
-
-    $self->table(undef);
 }
 
 sub record {
     my ($self, $values) = @_;
+    $self->record_number($self->record_number + 1);
     $self->debugf("Added new record with %d values", scalar(@$values));
     $self->table->add(@$values);
 }
@@ -61,9 +66,15 @@ Rent::PIQT::Output::Columnar - Column-oriented output driver for PIQT
 Output like tabular, except each column containing a newline is formatted
 in the same column.
 
-    object_id   1
-    object_tp   Property
-    name        Test property by rent.com
+    note_id  ┃ note_tp            ┃ salesperson_id ┃ note_nm         ┃ value_xt
+    ━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     9857516 │ ntp_invoiceprinted │   9669938      │ Invoice Printed │ Invoice Printed
+     9857519 │ ntp_invoice_faxed  │   9669938      │ Invoice Faxed   │ Invoice Faxed. Attn: Brenda
+    40116931 │ ntp_property_edit  │    954250      │ Edit Property   │ Euna Han <ehan@rent.com> (954250)
+             │                    │                │                 │ made the following changes to
+             │                    │                │                 │ TEST Rent.com Property (Property 427608):
+             │                    │                │                 │   Property (427608):
+             │                    │                │                 │     Display company name as: 0 => 4
 
 =head1 AUTHOR
 
