@@ -43,13 +43,8 @@ sub AUTOLOAD {
             '(' . join(", ", map { quote(printable($_)) } @hook_args) . ')',
         );
 
-        if (exists $self->{'hooks'}->{$name} && ref $self->{'hooks'}->{$name} eq 'ARRAY') {
-            foreach my $hook (@{ $self->{'hooks'}->{$name} }) {
-                $hook->(@hook_args);
-            }
-        } else {
-            $self->{'pending_hooks'}->{$name} = \@hook_args;
-        }
+        $self->{'pending_hooks'}->{$name} = \@hook_args;
+        $self->run_pending_hooks;
 
         $self->{'kv'}->{$name} = $value;
         $self->is_modified(1);
@@ -214,17 +209,16 @@ sub run_pending_hooks {
             return;
         }
 
-        my $args = $self->{'pending_hooks'}->{$name};
         if (exists $self->{'hooks'}->{$name} && ref $self->{'hooks'}->{$name} eq 'ARRAY') {
             $self->controller->output->debugf("Running %s for %s",
                 pluralize(scalar(@{ $self->{'hooks'}->{$name} }), 'pending config hook', 'pending config hooks'),
                 quote($name),
             );
+
+            my $args = delete $self->{'pending_hooks'}->{$name};
             foreach my $hook (@{ $self->{'hooks'}->{$name} }) {
                 $hook->(@$args);
             }
-
-            delete $self->{'pending_hooks'}->{$name};
         }
     }
 
