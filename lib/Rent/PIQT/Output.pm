@@ -27,6 +27,9 @@ sub _build_is_interactive {
 
 has 'start_time', (is => 'rw');
 
+has 'character_set', (is => 'rw');
+has 'unicode', (is => 'rw');
+
 # The start and end of output. Signatures:
 #   start(\@fields)
 #       [{name => ..., type => ..., length => ...}, ...]
@@ -68,6 +71,34 @@ sub POSTBUILD {
             ]);
         },
     );
+
+    # Character sets and unicode support for unicode-aware output drivers
+    do {
+        $self->controller->config->register('character_set',
+            persist => 0,
+            hook => sub {
+                my ($config, $name, $old_value, $new_value) = @_;
+                $self->character_set($new_value);
+                return $config->unicode($new_value && $new_value =~ /UTF|UCS/i ? 1 : 0);
+            },
+        );
+
+        $self->controller->config->register('unicode',
+            persist => 0,
+            hook => sub {
+                my ($config, $name, $old_value, $new_value) = @_;
+                $self->unicode($new_value ? 1 : 0);
+            },
+        );
+
+        if (exists $ENV{'LC_CTYPE'}) {
+            $self->controller->config->character_set($ENV{'LC_CTYPE'});
+        } elsif (exists $ENV{'LANG'}) {
+            $self->controller->config->character_set($ENV{'LANG'});
+        } else {
+            $self->controller->config->character_set('ISO-8859-1');
+        }
+    };
 }
 
 sub colorize {

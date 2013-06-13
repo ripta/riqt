@@ -5,21 +5,25 @@ use Text::Table;
 
 with 'Rent::PIQT::Output';
 
-has record_number => (is => 'rw', default => 0);
+has fields => (is => 'rw');
 
-has sep => (is => 'lazy');
-sub _build_sep {
-    return {
-        is_sep => 1,
-        title  => " \x{2503} ",
-        body   => " \x{2502} "
-    };
-}
+has record_number => (is => 'rw', default => 0);
 
 has table => (is => 'rw');
 
+sub sep {
+    my ($self) = @_;
+    $self->debugf("Unicode is " . ($self->unicode ? 'ON' : 'OFF'));
+    return {
+        is_sep => 1,
+        title  => ($self->unicode ? " \x{2503} " : ' | '),
+        body   => ($self->unicode ? " \x{2502} " : ' | '),
+    };
+}
+
 sub start {
     my ($self, $fields) = @_;
+    $self->fields($fields);
 
     my @headings = map { ($_->{'name'}, $self->sep) } @$fields;
     pop @headings if @headings;
@@ -42,7 +46,11 @@ sub finish {
     foreach ($t->title) {
         $self->print($_);
     }
-    $self->print($t->rule("\x{2501}", "\x{2547}"));
+    if ($self->unicode) {
+        $self->print($t->rule("\x{2501}", "\x{2547}"));
+    } else {
+        $self->print($t->rule("-", "+"));
+    }
     foreach ($t->body) {
         $self->print($_);
     }
@@ -50,9 +58,23 @@ sub finish {
 
 sub record {
     my ($self, $values) = @_;
+    my $mod_values = [];
+
+    foreach my $idx (0..$#$values) {
+        if (defined $values->[$idx]) {
+            if ($self->fields->[$idx]->{'type'} eq 'bool') {
+                $mod_values->[$idx] = $values->[$idx] ? 'YES' : 'NO';
+            } else {
+                $mod_values->[$idx] = $values->[$idx];
+            }
+        } else {
+            $mod_values->[$idx] = $self->unicode ? "\x{2205}" : '(null)';
+        }
+    }
+
     $self->record_number($self->record_number + 1);
     $self->debugf("Added new record with %d values", scalar(@$values));
-    $self->table->add(map { defined $_ ? $_ : "\x{2205}" } @$values);
+    $self->table->add(@$mod_values);
 }
 
 1;
