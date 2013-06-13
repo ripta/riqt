@@ -17,9 +17,9 @@ sub AUTOLOAD {
         return exists($self->{'kv'}->{$name}) ? $self->{'kv'}->{$name} : undef;
     } elsif (scalar(@args) == 1) {
         my $value = $args[0];
-        if (uc $value eq 'ON') {
+        if (uc $value eq 'ON' || uc $value eq 'YES') {
             $value = 1;
-        } elsif (uc $value eq 'OFF') {
+        } elsif (uc $value eq 'OFF' || uc $value eq 'NO') {
             $value = 0;
         }
 
