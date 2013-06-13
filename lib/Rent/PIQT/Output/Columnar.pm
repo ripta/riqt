@@ -52,7 +52,7 @@ sub record {
     my ($self, $values) = @_;
     $self->record_number($self->record_number + 1);
     $self->debugf("Added new record with %d values", scalar(@$values));
-    $self->table->add(@$values);
+    $self->table->add(map { defined $_ ? $_ : "\x{2205}" } @$values);
 }
 
 1;
@@ -68,7 +68,7 @@ in the same column.
 
     note_id  ┃ note_tp            ┃ salesperson_id ┃ note_nm         ┃ value_xt
     ━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-     9857516 │ ntp_invoiceprinted │   9669938      │ Invoice Printed │ Invoice Printed
+     9857516 │ ntp_invoiceprinted │   9669938      │ Invoice Printed │ ∅
      9857519 │ ntp_invoice_faxed  │   9669938      │ Invoice Faxed   │ Invoice Faxed. Attn: Brenda
     40116931 │ ntp_property_edit  │    954250      │ Edit Property   │ Euna Han <ehan@rent.com> (954250)
              │                    │                │                 │ made the following changes to
