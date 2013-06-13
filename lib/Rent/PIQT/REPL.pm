@@ -140,6 +140,7 @@ has 'output' => (
 sub _set_controller {
     my ($self, $attr) = @_;
     $attr->controller($self);
+    $attr->POSTBUILD if $self->{'is_ready'} && $attr->can('POSTBUILD');
     return $attr;
 }
 
@@ -379,6 +380,8 @@ sub BUILD {
             return 1;
         },
     );
+
+    $self->{'is_ready'} = 1;
 }
 
 # Execute an internal command.
