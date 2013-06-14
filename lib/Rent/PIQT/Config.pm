@@ -182,7 +182,13 @@ sub register {
         }
     }
 
-    $self->{'opts'}->{$command} = { %opts };
+    my ($c_pkg, $c_file, $c_line) = caller;
+    $self->{'opts'}->{$command} = {
+        %opts,
+        caller_package  => $c_pkg,
+        caller_file     => $c_file,
+        caller_line     => $c_line,
+    };
 
     return unless $hook;
 
