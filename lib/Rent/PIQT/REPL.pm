@@ -596,9 +596,15 @@ sub run {
 # Run queries from a single file. Files can load other files.
 sub run_file {
     my ($self, $file) = @_;
+    unless ($file) {
+        $self->output->error("Filename is required.");
+        return;
+    }
+
     $self->output->debugf("Loading SQL %s", quote($file));
 
     $file =~ s#^~/#$ENV{'HOME'} . '/'#e;
+    $file =~ s/;$//;
     unless (-e $file) {
         $self->output->errorf("Cannot load file %s: file does not exist", quote($file));
         $self->output->println;
