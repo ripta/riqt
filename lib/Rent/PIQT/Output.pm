@@ -65,6 +65,8 @@ sub POSTBUILD {
         only => 'i',
         hook => sub {
             my ($config, $name, $old_value, $new_value) = @_;
+            return unless $self == $config->controller->output;
+
             $config->controller->output([
                 $new_value,
                 $config->controller->output,
