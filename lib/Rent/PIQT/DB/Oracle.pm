@@ -83,21 +83,22 @@ around POSTBUILD => sub {
         signature => "%s query",
         code => sub {
             my ($ctrl, $query) = @_;
+            my $rows;
 
             my $stmt_id = sprintf('%s:%02d%04d', $ENV{'USER'}, $$ % 100, time % 10000);
             $ctrl->output->info("Statement will be planned as $stmt_id");
 
-            eval {
-                $self->driver->do(qq{DELETE FROM plan_table WHERE statement_id = '$stmt_id'});
-                $self->driver->do(qq{
-                    EXPLAIN PLAN
-                    SET
-                        statement_id = '$stmt_id'
-                    FOR
-                        $query
-                });
-            };
-            return $ctrl->output->error($@) if $@;
+            $rows = $self->driver->do(qq{DELETE FROM plan_table WHERE statement_id = '$stmt_id'});
+            return $ctrl->output->error($self->driver->errstr) unless $rows;
+
+            $rows = $self->driver->do(qq{
+                EXPLAIN PLAN
+                SET
+                    statement_id = '$stmt_id'
+                FOR
+                    $query
+            });
+            return $ctrl->output->error($self->driver->errstr) unless $rows;
 
             my $cost_sql = qq{
                 SELECT
@@ -107,9 +108,21 @@ around POSTBUILD => sub {
                 WHERE
                     statement_id = '$stmt_id'
             };
+
+            my $cost_sth = $self->driver->prepare($cost_sql);
+            return $ctrl->output->error($self->driver->errstr) unless $cost_sth;
+
+            $cost_sth->execute or do {
+                $ctrl->output->error($cost_sth->errstr);
+                return;
+            };
+
+            my ($cost) = $cost_sth->fetchrow_array;
+            die "Could not calculate EXPLAIN cost. Internal error?" unless $cost;
+
             $ctrl->output->okf(
                 "TOTAL COST: %s",
-                $self->driver->selectrow_arrayref($cost_sql)->[0],
+                $cost,
             );
 
             my $retrieve_sql = qq{
