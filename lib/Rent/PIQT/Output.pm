@@ -65,7 +65,12 @@ sub POSTBUILD {
         only => 'i',
         hook => sub {
             my ($config, $name, $old_value, $new_value) = @_;
-            return unless $self == $config->controller->output;
+            unless ($self == $config->controller->output) {
+                $self->controller->output->debugf("Skipping 'mode' hook for %s, because it is not the active output driver",
+                    quote($self),
+                );
+                return;
+            }
 
             $config->controller->output([
                 $new_value,
