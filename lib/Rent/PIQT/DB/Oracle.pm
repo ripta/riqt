@@ -227,12 +227,93 @@ around POSTBUILD => sub {
                     $where_clause
             };
 
-            if ($self->do($sql)) {
-                $self->display($ctrl->output);
-            } else {
-                $ctrl->output->error($self->last_error);
-            }
+            $self->do_and_display($sql, $ctrl->output);
+            return 1;
+        },
+    });
 
+    $self->controller->register('show sessions', {
+        code => sub {
+            my ($ctrl, $args) = @_;
+
+            my $sql = q{ SELECT * FROM gv$session };
+            $sql .= $args if $args;
+
+            $self->do_and_display($sql, $ctrl->output);
+            return 1;
+        },
+    });
+
+    $self->controller->register('show trans', 'show transactions', {
+        code => sub {
+            my ($ctrl, $args) = @_;
+
+            my $sql = q{ SELECT * FROM gv$transaction };
+            $sql .= $args if $args;
+
+            $self->do_and_display($sql, $ctrl->output);
+            return 1;
+        },
+    });
+
+
+    $self->controller->register('show locks', {
+        code => sub {
+            my ($ctrl, $args) = @_;
+            my $sql = q{
+                SELECT
+                    s.sid || ',' || s.serial# || '@' || s.inst_id AS session_id,
+                    s.status AS session_status,
+                    s.machine AS session_machine,
+                    s.program AS session_program,
+                    s.type AS session_type,
+                    s.schemaname AS session_schemaname,
+                    s.osuser AS session_osuser,
+                    d.owner || '.' || d.object_name AS dba_object,
+                    d.object_type AS dba_object_type,
+                    DECODE(l.block, 0, 'Not Blocking', 1, 'Blocking', 2, 'Global') AS lock_block,
+                    l.ctime AS lock_ctime,
+                    DECODE(
+                        v.locked_mode,
+                        0, 'None',
+                        1, 'Null',
+                        2, 'Row-Share (Conc. Read)',
+                        3, 'Row-Exclusive (Conc. Write)',
+                        4, 'Share (Prot. Read)',
+                        5, 'Share Row-X (Prot. Write)',
+                        6, 'Exclusive',
+                        'Other: ' || TO_CHAR(v.locked_mode)
+                    ) AS lock_mode,
+                    q.sql_text AS sql
+                FROM gv$locked_object v
+                    JOIN gv$lock l ON (l.id1 = v.object_id)
+                    LEFT JOIN dba_objects d ON (d.object_id = v.object_id)
+                    LEFT JOIN gv$session s ON (s.sid = v.session_id)
+                    LEFT JOIN gv$sql q ON (q.sql_id = s.sql_id)
+                ORDER BY
+                    l.ctime DESC,
+                    session_id
+            };
+
+            $self->do_and_display($sql, $ctrl->output);
+            return 1;
+        },
+    });
+
+    $self->controller->register('kill', {
+        signature => '%s <sid>',
+        help => q{
+            Kill an Oracle session. The <sid> must be a string in the form of a session ID
+            and session serial#. For example:
+
+                SCOTT> KILL '123,98';
+        },
+        code => sub {
+            my ($ctrl, $args) = @_;
+            my $sql = sprintf("ALTER SYSTEM KILL SESSION %s",
+                singlequote(parse_argument_string($args)),
+            );
+            $self->do_and_display($sql, $ctrl->output);
             return 1;
         },
     });

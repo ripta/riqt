@@ -3,6 +3,7 @@ package Rent::PIQT::Util;
 use strict;
 use String::Escape qw/
     backslash
+    singlequote
     unbackslash
     unsinglequote
     unquote
