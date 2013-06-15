@@ -235,6 +235,13 @@ sub printlnf {
     $self->println(sprintf($msg, @args));
 }
 
+sub reindent {
+    my ($self, $msg, $amt) = @_;
+    $msg ||= "";
+    $amt ||= 1;
+    return indent_lines(strip_spaces($msg), 1);
+}
+
 sub reset_timing {
     my ($self) = @_;
     $self->start_time(undef);

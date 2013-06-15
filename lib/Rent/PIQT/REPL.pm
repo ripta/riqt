@@ -272,8 +272,65 @@ sub BUILD {
         persist => 0,
     );
 
-    $self->register('show commands',
-        sub {
+    $self->register('help', {
+        signature => ['%s', '%s <command>'],
+        help => q{
+            This is the meta help for the help command.
+
+            Specify a <command> to see the help documentation for that command. Some basic
+            commands to get you started off:
+
+            SET                 Set a configuration variable to a new value
+            SHOW                Show a list of all configuration variables
+            SHOW COMMANDS       Show a list of all commands
+            QUIT                Quit PIQT
+        },
+        code => sub {
+            my ($ctrl, $args) = @_;
+            my $o = $ctrl->output;
+
+            $args ||= "help";
+            $args = uc $args;
+            $args =~ s/^\s+|\s+$//g;
+            unless (exists $ctrl->_commands->{$args}) {
+                $o->errorf("Unknown command %s. Type 'SHOW COMMANDS' for full list.",
+                    quote($args),
+                );
+                return 1;
+            }
+
+            my $cmd_info = $ctrl->_commands->{$args};
+
+            $o->info;
+            $o->info($o->colorize("NAME", "bold white"));
+            $o->info($o->reindent($args, 1));
+
+            $o->info;
+            $o->info($o->colorize("SYNOPSIS", "bold white"));
+            if (ref $cmd_info->{'signature'} eq 'ARRAY') {
+                foreach (@{ $cmd_info->{'signature'} }) {
+                    $o->infof($o->reindent($_, 1), $args);
+                }
+            } else {
+                $o->infof($o->reindent($cmd_info->{'signature'}, 1), $args);
+            }
+
+            if (defined $cmd_info->{'help'}) {
+                $o->info;
+                $o->info($o->colorize("DESCRIPTION", "bold white"));
+                $o->info($o->reindent($cmd_info->{'help'}, 1));
+            }
+
+            return 1;
+        },
+    });
+
+    $self->register('show commands', {
+        help => q{
+            List all available commands and which package provides each of them. In verbose
+            level 2 and above, also list when each command was registered.
+        },
+        code => sub {
             my ($ctrl, $args) = @_;
             my $o = $ctrl->output;
 
@@ -282,9 +339,10 @@ sub BUILD {
             $o->start(
                 [
                     {name => "Command",         type => "str", length => 255},
-                    {name => "Signature",       type => "str", length => 1024},
-                    {name => "Registered At",   type => "int", length => 20},
-                    $self->verbose >= 2 ? {name => "Registered By",   type => "str", length => 255} : (),
+                    $self->verbose >= 2 ? {name => "Signature",       type => "str", length => 1024} : (),
+                    $self->verbose >= 2 ? {name => "Registered At",   type => "int", length => 20} : (),
+                    $self->verbose >= 2 ? {name => "Registered In",   type => "str", length => 255} : (),
+                    {name => "Registered By",   type => "str", length => 255},
                 ]
             );
 
@@ -292,21 +350,28 @@ sub BUILD {
                 my $opts = $self->_commands->{$cmd};
                 $o->record([
                     $cmd,
-                    sprintf($opts->{'signature'}, $cmd),
-                    $opts->{'created_at'} * 1000,
+                    $self->verbose >= 2 ? sprintf($opts->{'signature'}, $cmd) : (),
+                    $self->verbose >= 2 ? $opts->{'created_at'} * 1000 : (),
                     $self->verbose >= 2 ? $opts->{'caller_file'} . ':' . $opts->{'caller_line'} : (),
+                    $opts->{'caller_package'},
                 ]);
             }
 
             $o->finish;
             return 1;
         },
-    );
+    });
 
     # Register "load plugin" command now that logging and components are
     # all set up and ready
-    $self->register('load plugin',
-        sub {
+    $self->register('load plugin', {
+        signature => '%s <package_name>',
+        help => q{
+            Loads a plugin package into the current session. The <package_name> must be
+            quoted. If the package name contains ::, or begins with ::, it is used as-is.
+            Otherwise, the package name is searched under the PIQT::Plugins namespace.
+        },
+        code => sub {
             my ($ctrl, $args) = @_;
             my $name = parse_argument_string($args);
 
@@ -348,12 +413,35 @@ sub BUILD {
             $o->finish;
             return 1;
         },
-    );
+    });
 
     # Register > command to forward the result set
-    $self->register('>',
-        sub {
-            my ($self) = @_;
+    $self->register('>', {
+        signature => [
+            '%s',
+            '%s <limit>',
+        ],
+        help => q{
+            Retrieve the next result set produced by the last query.
+
+            An existing query must be active, and already have been executed. Queries in
+            the buffer are not automatically executed. This command does not modify or
+            munge the contents of the buffer.
+
+            An optional <limit> may also be specified. If no limit is specified explicitly,
+            the value of the LIMIT and DEFLIMIT configuration variables are used, in that
+            order of precedence.
+
+            This command can be specified as many times, one after another, in order to
+            continue to the next result set.
+        },
+        code => sub {
+            my ($self, $args) = @_;
+            my $limit = $args
+                ? int($args)
+                : $self->config->limit
+                    || $self->config->deflimit
+                    || 0;
 
             # Check for an active query
             unless ($self->db->statement) {
@@ -370,24 +458,25 @@ sub BUILD {
             $self->output->start_timing;
 
             # Only show a result set if the query produces a result set
-            my $limit = $self->config->limit || $self->config->deflimit || 0;
             my $row_num = $self->db->display($self->output, $limit);
-
             $self->output->finish_timing($row_num || $self->db->rows_affected);
             return 1;
         },
-    );
+    });
 
     # Register an extra exit command; the \q alias is from mysql-cli
-    $self->register('exit', 'quit', '\q',
-        sub {
+    $self->register('exit', 'quit', '\q', {
+        help => q{
+            Exit the interactive interface.
+        },
+        code => sub {
             my ($self) = @_;
             $self->output->debugf("REPL age is %s", $self->tick);
             $self->output->info("BYE");
             $self->_done(1);
             return 1;
         },
-    );
+    });
 
     $self->{'is_ready'} = 1;
 }
@@ -584,6 +673,7 @@ sub register {
             caller_line     => $c_line,
             created_at      => $self->tick,
             signature       => $opts->{'signature'} || '%s',
+            help            => $opts->{'help'} || undef,
         };
     }
 }

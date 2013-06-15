@@ -18,6 +18,7 @@ our @EXPORT = qw/
     parse_argument_string
     pluralize
     rstring_to_regexp
+    strip_spaces
 /;
 our @EXPORT_OK = @EXPORT;
 
@@ -78,6 +79,13 @@ sub rstring_to_regexp {
     die "Unsupported operation: m// cannot have option '$components[2]'" if $components[2];
 
     return qr/$components[1]/i;
+}
+
+sub strip_spaces {
+    my ($text) = @_;
+    $text =~ s/^\r?\n//g;
+    $text =~ /^(\s+)/ && $text =~ s/^$1//mg;
+    return $text;
 }
 
 1;

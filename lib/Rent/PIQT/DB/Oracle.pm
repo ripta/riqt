@@ -80,7 +80,10 @@ around POSTBUILD => sub {
     );
 
     $self->controller->register('explain', 'explain plan', 'explain plan for', {
-        signature => "%s query",
+        signature => "%s <query>",
+        help => q{
+            Calculate and display the execution plan for <query>.
+        },
         code => sub {
             my ($ctrl, $query) = @_;
             my $rows;
@@ -151,7 +154,15 @@ around POSTBUILD => sub {
     });
 
     $self->controller->register('show create', {
-        signature => "%s TABLE|VIEW|FUNCTION|PROCEDURE name",
+        signature => [
+            '%s TABLE <name>',
+            '%s VIEW <name>',
+            '%s FUNCTION <name>',
+            '%s PROCEDURE <name>',
+        ],
+        help => q{
+            Print the creation DDL for a database object.
+        },
         code => sub {
             my ($ctrl, $arg) = @_;
             $arg = uc $arg;
