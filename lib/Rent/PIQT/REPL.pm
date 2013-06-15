@@ -10,7 +10,7 @@ use String::Escape qw/quote printable/;
 use Term::ReadLine;
 use Time::HiRes qw/gettimeofday tv_interval/;
 
-our $VERSION = '0.5.3';
+our $VERSION = '0.5.4';
 
 # Generate the 'isa' clause for some 'has' below.
 sub _generate_isa_for {
@@ -44,18 +44,26 @@ sub _search_and_instantiate_under {
 sub _search_under {
     my ($base, $klass) = @_;
 
+    # If the $klass is provided as KLASS_name, try different permutations
     my %seen = ();
     my @permutations = grep {
         $seen{$_}++ == 0
     } map {
         $base . '::' . $_
     } (
+        # as-is:
         $klass,
+        # uppercased first, but don't normalize
         ucfirst($klass),
+        # camelcase, but don't normalize
         join('', map { ucfirst $_ } split(/(?<=[A-Za-z])_(?=[A-Za-z])|\b/, $klass)),
+        # uppercase everything
         uc($klass),
+        # lowercase everything
         lc($klass),
+        # uppercase first, with normalization
         ucfirst(lc($klass)),
+        # camelcase, with normalization
         join('', map { ucfirst lc $_ } split(/(?<=[A-Za-z])_(?=[A-Za-z])|\b/, $klass)),
     );
 
