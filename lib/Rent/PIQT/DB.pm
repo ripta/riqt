@@ -199,6 +199,16 @@ sub do {
     return $self->prepare($sql) && $self->execute(@args);
 }
 
+sub do_and_display {
+    my ($self, $sql, $output, %opts) = @_;
+    if ($self->do($sql, exists $opts{'args'} ? @{$opts{'args'}} : ())) {
+        return $self->display($output, exists $opts{'limit'} ? $opts{'limit'} : undef);
+    } else {
+        $output->error($self->last_error);
+        return undef;
+    }
+}
+
 sub dsn {
     my ($self) = @_;
     my $class = ref $self;
