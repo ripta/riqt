@@ -186,7 +186,8 @@ sub display {
     $output->start($self->field_prototypes);
     while (my $row = $self->fetch_array) {
         $output->record([ @$row ]);
-        last if $limit && ++$row_num >= $limit;
+        $row_num++;
+        last if $limit && $row_num >= $limit;
     }
     $output->finish;
     $output->warn("There may be more rows") if $limit && $row_num >= $limit;
