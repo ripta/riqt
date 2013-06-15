@@ -168,10 +168,13 @@ around POSTBUILD => sub {
             $arg = uc $arg;
 
             my ($type, $obj) = split /\s+/, $arg, 2;
+            die "Object type is missing." unless $type;
+            die "Object name is missing." unless $obj;
 
             my @fn_args = ();
             if ($obj =~ m{\.}) {
                 my ($schema, $name) = split /\./, $obj;
+                die "Invalid object name: " . quote($obj);
                 @fn_args = ($type, $name, $schema);
             } else {
                 @fn_args = ($type, $obj);

@@ -217,6 +217,13 @@ sub print {
     $self->out->print($msg);
 }
 
+sub printc {
+    my ($self, $color, $msg) = @_;
+    $color ||= "white";
+    $msg ||= "";
+    $self->print($self->colorize($msg, $color));
+}
+
 sub printf {
     my ($self, $msg, @args) = @_;
     $msg ||= "";

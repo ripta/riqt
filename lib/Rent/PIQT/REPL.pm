@@ -381,13 +381,18 @@ sub BUILD {
 
             return 1;
         },
-    );
+    });
 
     # Register "show plugin" command
-    $self->register('show plugin', 'show plugins',
-        sub {
+    $self->register('show plugin', 'show plugins', {
+        help => q{
+            List all plugins that are currently loaded.
+        },
+        code => sub {
             my ($ctrl, $args) = @_;
             my $o = $ctrl->output;
+
+            die "Syntax error: SHOW PLUGINS does not take any arguments" if $args;
 
             $o->start(
                 [
