@@ -388,10 +388,11 @@ sub BUILD {
 sub execute {
     my ($self, $command) = @_;
     $command =~ s/;$//;
+    $command =~ s/^\s+|\s+$//g;
     return unless $self->_commands;
 
     my @commands = sort { length($b) <=> length($a) || $a cmp $b } keys %{ $self->_commands };
-    my @matches = grep { $command =~ /^\Q$_\E(?:\b|\s+)/i } @commands;
+    my @matches = grep { $command =~ /^\Q$_\E(?:\b|\s+\S+.*|)$/i } @commands;
 
     if (scalar(@matches)) {
         $self->output->debugf("Execute internal command:");
