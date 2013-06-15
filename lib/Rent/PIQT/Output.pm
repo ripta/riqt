@@ -85,7 +85,7 @@ sub POSTBUILD {
             persist => 0,
             hook => sub {
                 my ($config, $name, $old_value, $new_value) = @_;
-                $self->character_set($new_value);
+                $self->controller->output->character_set($new_value);
                 return $config->unicode($new_value && $new_value =~ /UTF|UCS/i ? 1 : 0);
             },
         );
@@ -94,7 +94,8 @@ sub POSTBUILD {
             persist => 0,
             hook => sub {
                 my ($config, $name, $old_value, $new_value) = @_;
-                $self->unicode($new_value ? 1 : 0);
+                $self->debugf("Output driver %s set UNICODE to %s", $self, $new_value ? 'ON' : 'OFF');
+                $self->controller->output->unicode($new_value ? 1 : 0);
             },
         );
 
