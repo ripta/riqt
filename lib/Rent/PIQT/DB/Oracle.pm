@@ -80,9 +80,12 @@ around POSTBUILD => sub {
     );
 
     $self->controller->register('explain', 'explain plan', 'explain plan for', {
-        signature => "%s <query>",
+        signature => "%s <query>*",
         help => q{
-            Calculate and display the execution plan for <query>.
+            Calculate and display the execution plan for <query>. The <query> should be
+            presented as-is, e.g.:
+
+                EXPLAIN SELECT * FROM test;
         },
         code => sub {
             my ($ctrl, $query) = @_;
@@ -155,15 +158,19 @@ around POSTBUILD => sub {
 
     $self->controller->register('show create', {
         signature => [
-            '%s <object_type> <object_name>',
+            '%s FUNCTION <object_name>',
+            '%s MATERIALIZED VIEW <object_name>',
+            '%s PROCEDURE <object_name>',
+            '%s TABLE <object_name>',
+            '%s VIEW <object_name>',
         ],
         help => q{
             Print the creation DDL for a database object. DDL retrieval may take a while.
             For a faster alternative, if all you need is the definition of the object and
             not a well-formed DDL, try 'SHOW SOURCE'.
 
-            The <object_name> must be surrounded by double-quotes. <object_name> is
-            treated as uppercase.
+            If <object_name> is surrounded by double-quotes, it is treated as-is.
+            Otherwise, it is treated as all uppercased.
         },
         code => sub {
             my ($ctrl, $arg) = @_;

@@ -80,24 +80,46 @@ sub POSTBUILD {
     $self->is_modified(0);
     $self->run_pending_hooks;
 
-    $self->controller->register('set',
-        sub {
-            my ($self, $arg) = @_;
-            my ($name, $value) = split /\s+/, $arg, 2;
+    $self->controller->register('set', {
+        signature => '%s <name> <value>',
+        help => q{
+            Set a configuration parameter <name> to the value <value>. The <name> parameter
+            is case-insensitive, but the <value> is case-sensitive.
 
-            if (defined $value) {
+            The value can be specified as-is for simple values, e.g.:
+
+                SET ECHO ON
+                SET VERBOSE 4
+
+            while complex values containing whitespace must be single-quoted, e.g.:
+
+                SET date_format 'YYYY-MM-DD HH24:MI:SS'
+        },
+        code => sub {
+            my ($ctrl, $name, $value, @rest) = @_;
+            die "Configuration variable <name> is required." unless $name;
+
+            my $o = $ctrl->output;
+
+            if (@rest) {
+                $o->errorf("Invalid <value> for parameter %s:\n\t%s",
+                    quote($name),
+                    "Is the <value> a string that contains whitespaces? See 'HELP SET'.",
+                );
+            } elsif (defined $value) {
                 $name = lc $name;
                 $name =~ s/\s/_/g;
 
-                $self->output->info("SET $name $value");
-                $self->config->$name($value);
+                my $clean_value = normalize_single_quoted($value);
+                $o->info("SET $name $value");
+                $self->$name($clean_value);
             } else {
-                $self->output->errorf("'SET %s' requires a value", $name);
+                $o->errorf("'SET %s' requires a value", $name);
             }
 
             return 1;
         }
-    );
+    });
 
     $self->controller->register('show',
         sub {

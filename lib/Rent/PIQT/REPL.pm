@@ -280,10 +280,20 @@ sub BUILD {
             Specify a <command> to see the help documentation for that command. Some basic
             commands to get you started off:
 
-            SET                 Set a configuration variable to a new value
-            SHOW                Show a list of all configuration variables
-            SHOW COMMANDS       Show a list of all commands
-            QUIT                Quit PIQT
+                SET                 Set a configuration variable to a new value
+                SHOW                Show a list of all configuration variables
+                SHOW COMMANDS       Show a list of all commands
+                QUIT                Quit PIQT
+
+            If <command> contains whitespace, it should be single-quoted, for example,
+            these two commands work the same:
+
+                HELP SHOW
+                HELP 'SHOW'
+
+            but this command should be quoted, because SHOW COMMANDS contains a space:
+
+                HELP 'SHOW COMMANDS'
         },
         code => sub {
             my ($ctrl, $args) = @_;
@@ -433,9 +443,12 @@ sub BUILD {
             the buffer are not automatically executed. This command does not modify or
             munge the contents of the buffer.
 
-            An optional <limit> may also be specified. If no limit is specified explicitly,
-            the value of the LIMIT and DEFLIMIT configuration variables are used, in that
-            order of precedence.
+            An optional, numeric <limit> may also be specified. If no limit is specified
+            explicitly, the value of the LIMIT and DEFLIMIT configuration variables are
+            used, in that order of precedence.
+
+            Specify a <limit> of -1 to turn off all limits, and ignore the LIMIT and
+            DEFLIMIT configuration variables.
 
             This command can be specified as many times, one after another, in order to
             continue to the next result set.

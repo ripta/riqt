@@ -8,8 +8,21 @@ with 'Rent::PIQT::Plugin';
 sub BUILD {
     my ($self) = @_;
 
-    $self->controller->register('\e',
-        sub {
+    $self->controller->register('\e', {
+        signature => [
+            '%s',
+            '%s <filename>',
+        ],
+        help => q{
+            Edit the last query in the buffer in your favorite, and run it.
+            Deleting the query in the buffer will cause nothing to be run, and
+            the buffer to remain unchanged.
+
+            The default editor is selected based on your EDITOR environment
+            variable. If the EDITOR configuration variable is set, that value
+            is used instead.
+        },
+        code => sub {
             my ($ctrl, $args) = @_;
 
             my $editor = $ctrl->config->editor || $ENV{'EDITOR'} || do {
@@ -45,7 +58,7 @@ sub BUILD {
 
             return 1;
         },
-    );
+    });
 }
 
 1;

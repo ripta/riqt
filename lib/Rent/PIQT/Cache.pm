@@ -51,9 +51,30 @@ sub POSTBUILD {
 
     # Register listener for SHOW CACHE internal command, which can also take
     # a string argument to filter out the list
-    $self->controller->register('show cache',
-        sub {
-            my ($ctrl, $args) = @_;
+    $self->controller->register('show cache', {
+        signature => [
+            '%s',
+            '%s LIKE <criterion>',
+        ],
+        help => q{
+            List the top-level contents of the PIQT object cache.
+
+            The <criterion> is a single-quoted value, which if provided, will be used
+            to match against the cache object. Unlike regular SQL LIKE clauses, the
+            <criterion> is always wild-card, and always scoped to the current namespace.
+
+            To query across namespaces, either issue this command without any arguments,
+            or specify a full path. Example paths may be viewed by issuing this command
+            without any arguments.
+        },
+        code => sub {
+            my ($ctrl, $mode, $args, @rest) = @_;
+            die "Syntax error: too many arguments" if @rest;
+
+            if ($mode && uc $mode ne 'LIKE') {
+                die "Syntax error: unexpected '$mode'; expecting 'LIKE'";
+            }
+
             my $c = $ctrl->cache;
             my $o = $ctrl->output;
 
@@ -93,7 +114,7 @@ sub POSTBUILD {
 
             return 1;
         }
-    );
+    });
 }
 
 # Delete a key from the cache. Returns the value from the cache, or undef.

@@ -10,7 +10,24 @@ sub BUILD {
     my ($self) = @_;
 
     $self->controller->register('desc', 'describe', {
-        signature => "%s name",
+        signature => [
+            '%s <object_name>',
+            '%s <object_name> LIKE <criterion>',
+            '%s <object_name> =~ <regexp>',
+        ],
+        help => q{
+            Describe any object that can be SELECT from.
+
+            The <object_name> can be quoted (single- or double-) or left verbatim. When
+            quoted, behavior depends on the behavior of quoted objects in your driver:
+
+                DESCRIBE new_table
+                DESCRIBE 'new_table'
+                DESCRIBE "new_table"
+
+            If a LIKE clause is specified, see 'HELP :LIKE'. If a =~ clause is specified,
+            see 'HELP :REGEXP'.
+        },
         code => sub {
             my ($ctrl, $args) = @_;
             my ($object_name, $mode, $col_spec) = split /\s+/, $args, 3;
