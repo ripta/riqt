@@ -24,6 +24,7 @@ our @EXPORT = qw/
     is_regexp_string
     is_single_quoted
     like_to_regexp
+    normalize_single_quoted
     pluralize
     rstring_to_regexp
     strip_spaces
@@ -64,6 +65,12 @@ sub like_to_regexp {
     my $like = unbackslash unsinglequote $str;
     $like =~ s/%/.*/g;
     return qr/^$like$/i;
+}
+
+sub normalize_single_quoted {
+    my ($str) = @_;
+    return $str unless is_single_quoted $str;
+    return unbackslash unsinglequote $str;
 }
 
 sub unquote_or_die {
