@@ -61,7 +61,9 @@ around POSTBUILD => sub {
 
     $self->controller->register('date', 'time',
         sub {
-            my ($ctrl) = @_;
+            my ($ctrl, @rest) = @_;
+            die "Syntax error: command takes no arguments" if @rest;
+
             my $tick = int($ctrl->tick * 1000);
             my $sql = qq{
                 SELECT 'database' origin, TO_CHAR(SYSDATE) value FROM DUAL
@@ -88,7 +90,8 @@ around POSTBUILD => sub {
                 EXPLAIN SELECT * FROM test;
         },
         code => sub {
-            my ($ctrl, $query) = @_;
+            my ($ctrl, @rest) = @_;
+            my $query = join ' ', @rest;
             my $rows;
 
             my $stmt_id = sprintf('%s:%02d%04d', $ENV{'USER'}, $$ % 100, time % 10000);
@@ -173,17 +176,23 @@ around POSTBUILD => sub {
             Otherwise, it is treated as all uppercased.
         },
         code => sub {
-            my ($ctrl, $arg) = @_;
-            $arg = uc $arg;
+            my ($ctrl, @args) = @_;
 
-            my ($type, $obj) = split /\s+/, $arg, 2;
+            my $obj = pop @args;
+            my $type = join ' ', @args;
+
             die "Object type is missing." unless $type;
             die "Object name is missing." unless $obj;
+
+            if (is_double_quoted($obj)) {
+                $obj = unquote_or_die $obj;
+            } else {
+                $obj = uc $obj;
+            }
 
             my @fn_args = ();
             if ($obj =~ m{\.}) {
                 my ($schema, $name) = split /\./, $obj;
-                die "Invalid object name: " . quote($obj);
                 @fn_args = ($type, $name, $schema);
             } else {
                 @fn_args = ($type, $obj);
@@ -206,11 +215,10 @@ around POSTBUILD => sub {
     $self->controller->register('show invalid', {
         signature => "%s [TABLE|VIEW|FUNCTION|PROCEDURE] [LIKE '%%criteria%%']",
         code => sub {
-            my ($ctrl, $args) = @_;
+            my ($ctrl, $type, $mode, $like_name) = @_;
+            die "Syntax error: unexpected $mode, expected LIKE" if $mode && uc $mode ne 'LIKE';
+
             my @where_clauses = ();
-
-            my ($type, $like_name) = split /\s+LIKE\s+/i, $args, 2;
-
             push @where_clauses, "object_type = " . singlequote(uc($type)) if $type;
 
             if ($like_name) {
@@ -243,10 +251,10 @@ around POSTBUILD => sub {
 
     $self->controller->register('show sessions', {
         code => sub {
-            my ($ctrl, $args) = @_;
+            my ($ctrl, @args) = @_;
 
             my $sql = q{ SELECT * FROM gv$session };
-            $sql .= $args if $args;
+            $sql .= join ' ', @args if @args;
 
             $self->do_and_display($sql, $ctrl->output);
             return 1;
@@ -255,20 +263,21 @@ around POSTBUILD => sub {
 
     $self->controller->register('show trans', 'show transactions', {
         code => sub {
-            my ($ctrl, $args) = @_;
+            my ($ctrl, @args) = @_;
 
             my $sql = q{ SELECT * FROM gv$transaction };
-            $sql .= $args if $args;
+            $sql .= join ' ', @args if @args;
 
             $self->do_and_display($sql, $ctrl->output);
             return 1;
         },
     });
 
-
     $self->controller->register('show locks', {
         code => sub {
-            my ($ctrl, $args) = @_;
+            my ($ctrl, @rest) = @_;
+            die "Syntax error: command takes no arguments" if @rest;
+
             my $sql = q{
                 SELECT
                     s.sid || ',' || s.serial# || '@' || s.inst_id AS session_id,
@@ -318,9 +327,11 @@ around POSTBUILD => sub {
                 SCOTT> KILL '123,98';
         },
         code => sub {
-            my ($ctrl, $args) = @_;
+            my ($ctrl, $sid, @rest) = @_;
+            die "Syntax error: too many arguments: @rest" if @rest;
+
             my $sql = sprintf("ALTER SYSTEM KILL SESSION %s",
-                singlequote(unquote_or_die($args)),
+                singlequote(unquote_or_die($sid)),
             );
             $self->do_and_display($sql, $ctrl->output);
             return 1;

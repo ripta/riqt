@@ -29,8 +29,7 @@ sub BUILD {
             see 'HELP :REGEXP'.
         },
         code => sub {
-            my ($ctrl, $args) = @_;
-            my ($object_name, $mode, $col_spec) = split /\s+/, $args, 3;
+            my ($ctrl, $object_name, $mode, $col_spec, @rest) = @_;
             my $o = $ctrl->output;
 
             if (!$mode) {
@@ -40,7 +39,7 @@ sub BUILD {
             } elsif ($mode =~ /^=~$/) {
                 $mode = 'regexp';
             } else {
-                $o->errorf("Unknown DESCRIBE mode %s: expected LIKE or =~", quote($mode));
+                $o->errorf("Syntax error: unexpected %s; expected LIKE or =~", quote($mode));
                 return 1;
             }
 

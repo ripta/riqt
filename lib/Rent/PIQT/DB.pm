@@ -48,7 +48,8 @@ sub POSTBUILD {
 
     $self->controller->register('load',
         sub {
-            my ($ctrl) = @_;
+            my ($ctrl, @rest) = @_;
+            die "Syntax error: command takes no arguments" if @rest;
             $ctrl->output->info("Caching object names for tab completion...");
 
             $ctrl->output->start_timing;
