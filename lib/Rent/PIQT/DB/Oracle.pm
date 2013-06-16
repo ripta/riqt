@@ -155,13 +155,15 @@ around POSTBUILD => sub {
 
     $self->controller->register('show create', {
         signature => [
-            '%s TABLE <name>',
-            '%s VIEW <name>',
-            '%s FUNCTION <name>',
-            '%s PROCEDURE <name>',
+            '%s <object_type> <object_name>',
         ],
         help => q{
-            Print the creation DDL for a database object.
+            Print the creation DDL for a database object. DDL retrieval may take a while.
+            For a faster alternative, if all you need is the definition of the object and
+            not a well-formed DDL, try 'SHOW SOURCE'.
+
+            The <object_name> must be surrounded by double-quotes. <object_name> is
+            treated as uppercase.
         },
         code => sub {
             my ($ctrl, $arg) = @_;
