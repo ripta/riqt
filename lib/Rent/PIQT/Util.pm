@@ -10,6 +10,12 @@ use String::Escape qw/
 /;
 use Text::ParseWords;
 
+BEGIN {
+    String::Escape::_define_backslash_escapes(
+        "'" => "'",
+    );
+}
+
 our @ISA = qw/Exporter/;
 our @EXPORT = qw/
     argstring_to_array
