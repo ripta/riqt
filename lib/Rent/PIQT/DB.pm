@@ -377,10 +377,8 @@ sub prepare {
     my ($self, $query, %opts) = @_;
     $opts{'save_query'} //= 0;
 
-    $query ||= $self->last_query;
-
     unless ($query) {
-        $self->controller->output->error('Execution buffer is empty. Please specify a query or PL/SQL block to execute.');
+        $self->controller->output->error('No query to execute.');
         return 0;
     }
 

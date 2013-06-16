@@ -461,6 +461,7 @@ sub BUILD {
             }
 
             $self->output->start_timing;
+            $self->output->infof("Query: %s", $self->db->last_query) if $self->db->last_query && $self->config->echo;
 
             # Only show a result set if the query produces a result set
             my $row_num = $self->db->display($self->output, $limit);
@@ -585,7 +586,12 @@ sub process {
         $self->run_file($1);
         return 3;
     } elsif ($line eq '/') {
-        $self->output->debugf("Re-executing buffer, if available");
+        if ($self->db->last_query) {
+            $$buffer = "" . $self->db->last_query;
+        } else {
+            $self->output->error('Execution buffer is empty. Please specify a query or PL/SQL block to execute.');
+            return 2;
+        }
     } else {
         $self->output->debugf("Read: %s", quote(printable($line)));
         $$buffer .= $line;
