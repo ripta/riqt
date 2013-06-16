@@ -7,13 +7,14 @@ with 'Rent::PIQT::Plugin';
 sub BUILD {
     my ($self) = @_;
 
-    $self->controller->register('print',
-        sub {
+    $self->controller->register('print', {
+        slurp => 1,
+        code => sub {
             my ($ctrl, $args) = @_;
             $ctrl->output->println(unquote_or_die($args));
             return 1;
         },
-    );
+    });
 }
 
 1;

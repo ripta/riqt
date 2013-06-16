@@ -536,15 +536,21 @@ sub execute {
         $args =~ s/^\Q$command_name\E//i;
         $args =~ s/^\s+//;
 
-        my @args = argstring_to_array($args);
-        @args = ($args) unless @args;
-
         $self->output->debugf("    Execute  : %s(%s)", $command_name, $args ? quote(printable($args)) : '');
-        $self->output->debugf("    ArgArray :");
-        foreach (0..$#args) {
-            $self->output->debugf("        $_ => %s", $args[$_]);
+
+        if ($self->_commands->{$command_name}->{'slurp'}) {
+            $self->output->debugf("    Slurp    : YES");
+            return $self->_commands->{$command_name}->{'code'}->($self, $args);
+        } else {
+            my @args = argstring_to_array($args);
+            @args = ($args) unless @args;
+
+            $self->output->debugf("    ArgArray :");
+            foreach (0..$#args) {
+                $self->output->debugf("        $_ => %s", $args[$_]);
+            }
+            return $self->_commands->{$command_name}->{'code'}->($self, @args);
         }
-        return $self->_commands->{$command_name}->{'code'}->($self, @args);
     }
 
     return 0;
@@ -721,6 +727,7 @@ sub register {
             created_at      => $self->tick,
             signature       => $opts->{'signature'} || '%s',
             help            => $opts->{'help'} || undef,
+            slurp           => $opts->{'slurp'} || 0,
         };
     }
 }
