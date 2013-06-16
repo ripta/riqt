@@ -1,6 +1,7 @@
 package Rent::PIQT::Config;
 
 use Moo;
+use Rent::PIQT::Util;
 
 with 'Rent::PIQT::Component';
 
@@ -121,12 +122,38 @@ sub POSTBUILD {
         }
     });
 
-    $self->controller->register('show',
-        sub {
-            my ($self, $name) = @_;
+    $self->controller->register('show', {
+        signature => [
+            '%s',
+            '%s LIKE <criterion>',
+            '%s =~ <regexp>',
+        ],
+        help => q{
+        },
+        code => sub {
+            my ($self, $mode, $col_spec) = @_;
             my $c = $self->config;
             my $o = $self->output;
             my $rows = 0;
+
+            if (!$mode) {
+                $mode = '';
+            } elsif ($mode =~ /^like$/i) {
+                $mode = 'like';
+            } elsif ($mode =~ /^=~$/) {
+                $mode = 'regexp';
+            }
+
+            my $regexp = $mode && $col_spec
+                ? $mode eq 'like'
+                    ? like_to_regexp $col_spec
+                    : rstring_to_regexp $col_spec
+                : undef;
+
+            if ($col_spec && $regexp) {
+                $o->debugf("    Colspec: %s", $col_spec);
+                $o->debugf("    Regexp : %s", $regexp);
+            }
 
             $o->start_timing;
             $o->start(
@@ -139,22 +166,21 @@ sub POSTBUILD {
                     {name => "Value", type => "str", length => 4000},
                 ]
             );
-            if ($name) {
-                if (my $value = $c->$name) {
+
+            if ($mode && !$regexp) {
+                my $name = $mode;
+                my $value = $c->$name;
+                if (defined $value) {
                     my $opts = $c->options_for($name);
                     $o->record([$name, $opts->{'only'}, $opts->{'read'}, $opts->{'write'}, $opts->{'persist'}, $value]);
                     $rows++;
                 } else {
-                    foreach my $key (sort $c->KEYS) {
-                        next unless $key =~ /\Q$name\E/i;
-                        $rows++;
-
-                        my $opts = $c->options_for($key);
-                        $o->record([$key, $opts->{'only'}, $opts->{'read'}, $opts->{'write'}, $opts->{'persist'}, $c->$key]);
-                    }
+                    $o->errorf("No configuration variable named %s found", quote($name));
+                    return 1;
                 }
             } else {
                 foreach my $key (sort $c->KEYS) {
+                    next if $regexp && $key !~ $regexp;
                     $rows++;
 
                     my $opts = $c->options_for($key);
@@ -166,7 +192,7 @@ sub POSTBUILD {
 
             return 1;
         }
-    );
+    });
 }
 
 sub options_for {
