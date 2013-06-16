@@ -296,12 +296,28 @@ sub BUILD {
                 HELP 'SHOW COMMANDS'
         },
         code => sub {
-            my ($ctrl, $args) = @_;
+            my ($ctrl, @args) = @_;
             my $o = $ctrl->output;
 
-            $args ||= "help";
+            my $args = join(' ', @args) || 'help';
             $args = uc $args;
             $args =~ s/^\s+|\s+$//g;
+            $args = normalize_single_quoted($args);
+
+            if (scalar(@args) > 1) {
+                if (!defined($ctrl->config->help_warnings) || $ctrl->config->help_warnings) {
+                    $o->warnf("Too many arguments to HELP. Arguments with whitespaces should be");
+                    $o->warnf("surrounded by single quotes, unless specified otherwise. HELP will");
+                    $o->warnf("attempt to automatically fix it and warn you, but not all commands");
+                    $o->warnf("will be able to do so.");
+                    $o->warnf;
+                    $o->warnf("Turn off these warnings by issuing:");
+                    $o->warnf("    SET help_warnings OFF");
+                    $o->warnf;
+                    sleep 5;
+                }
+            }
+
             unless (exists $ctrl->_commands->{$args}) {
                 $o->errorf("Unknown command %s. Type 'SHOW COMMANDS' for full list.",
                     quote($args),
@@ -520,8 +536,15 @@ sub execute {
         $args =~ s/^\Q$command_name\E//i;
         $args =~ s/^\s+//;
 
+        my @args = argstring_to_array($args);
+        @args = ($args) unless @args;
+
         $self->output->debugf("    Execute  : %s(%s)", $command_name, $args ? quote(printable($args)) : '');
-        return $self->_commands->{$command_name}->{'code'}->($self, $args);
+        $self->output->debugf("    ArgArray :");
+        foreach (0..$#args) {
+            $self->output->debugf("        $_ => %s", $args[$_]);
+        }
+        return $self->_commands->{$command_name}->{'code'}->($self, @args);
     }
 
     return 0;
