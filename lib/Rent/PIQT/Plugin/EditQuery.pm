@@ -14,24 +14,34 @@ sub BUILD {
             '%s <filename>',
         ],
         help => q{
-            Edit the last query in the buffer in your favorite, and run it.
-            Deleting the query in the buffer will cause nothing to be run, and
-            the buffer to remain unchanged.
+            Edit the last query in the buffer in your favorite editor, and run
+            it.  Deleting the query in the buffer will cause nothing to be run,
+            and the buffer to remain unchanged. Only one query at a time can be
+            edited this way.
+
+            If a <filename> was specified, the file will be edited directly,
+            and then executed as an external script. After execution, the buffer
+            will contain the last query executed in the file.
 
             The default editor is selected based on your EDITOR environment
             variable. If the EDITOR configuration variable is set, that value
             is used instead.
         },
         code => sub {
-            my ($ctrl, $args) = @_;
+            my ($ctrl, $filename) = @_;
+            my $c = $ctrl->config;
+            my $o = $ctrl->output;
 
-            my $editor = $ctrl->config->editor || $ENV{'EDITOR'} || do {
-                $ctrl->output->errorf("Neither the 'editor' config or the EDITOR environment variable is set.");
-                $ctrl->output->errorf("You'll need to issue 'SET EDITOR <path-to-editor>', or set your environment variable.");
+            my $editor = $c->editor || $ENV{'EDITOR'} || do {
+                $o->errorf("Neither the 'editor' config or the EDITOR environment variable is set.");
+                $o->errorf("You'll need to issue 'SET EDITOR <path-to-editor>', or set your environment variable.");
                 return 1;
             };
 
-            if (my $query = $ctrl->db->last_query) {
+            if ($filename) {
+                system("$editor $filename");
+                $ctrl->run_file($filename);
+            } elsif (my $query = $ctrl->db->last_query) {
                 my ($fh, $fname) = tempfile();
                 print $fh $query;
                 print $fh ';' unless $query =~ /;$/;
@@ -40,7 +50,7 @@ sub BUILD {
                 system("$editor $fname");
 
                 open $fh, $fname or do {
-                    $ctrl->output->errorf(
+                    $o->errorf(
                         "Cannot re-open temporary file %s for reading",
                         quote($fname),
                     );
@@ -53,7 +63,7 @@ sub BUILD {
 
                 $ctrl->run_query($query) if $query;
             } else {
-                $ctrl->output->error("There is no previous query to edit.");
+                $o->error("There is no previous query to edit.");
             }
 
             return 1;
