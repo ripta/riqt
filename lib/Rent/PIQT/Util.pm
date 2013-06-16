@@ -8,9 +8,11 @@ use String::Escape qw/
     unsinglequote
     unquote
 /;
+use Text::ParseWords;
 
 our @ISA = qw/Exporter/;
 our @EXPORT = qw/
+    argstring_to_array
     indent_lines
     is_double_quoted
     is_regexp_string
@@ -21,7 +23,12 @@ our @EXPORT = qw/
     strip_spaces
     unquote_or_die
 /;
-our @EXPORT_OK = @EXPORT;
+our @EXPORT_OK = ();
+
+sub argstring_to_array {
+    my ($str, %opts) = @_;
+    return quotewords('\s+', 1, $str);
+}
 
 sub indent_lines {
     my ($str, $amt) = @_;
