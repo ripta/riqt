@@ -80,7 +80,7 @@ sub unquote_or_die {
     } elsif (is_single_quoted($str)) {
         return unsinglequote $str;
     } else {
-        die "Syntax error: expected single- or double-quoted string";
+        die "Syntax error: expected single- or double-quoted string at:\n\n\t$str\n\t^";
     }
 }
 
