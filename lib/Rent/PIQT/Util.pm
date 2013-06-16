@@ -16,10 +16,10 @@ our @EXPORT = qw/
     is_regexp_string
     is_single_quoted
     like_to_regexp
-    parse_argument_string
     pluralize
     rstring_to_regexp
     strip_spaces
+    unquote_or_die
 /;
 our @EXPORT_OK = @EXPORT;
 
@@ -53,7 +53,7 @@ sub like_to_regexp {
     return qr/^$like$/i;
 }
 
-sub parse_argument_string {
+sub unquote_or_die {
     my ($str) = @_;
     if (is_double_quoted($str)) {
         return unbackslash unquote $str;

@@ -373,7 +373,7 @@ sub BUILD {
         },
         code => sub {
             my ($ctrl, $args) = @_;
-            my $name = parse_argument_string($args);
+            my $name = unquote_or_die($args);
 
             if ($ctrl->load_plugin($name)) {
                 $ctrl->output->okf("Plugin %s loaded successfully", quote($name));

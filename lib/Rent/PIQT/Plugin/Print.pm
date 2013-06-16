@@ -10,7 +10,7 @@ sub BUILD {
     $self->controller->register('print',
         sub {
             my ($ctrl, $args) = @_;
-            $ctrl->output->println(parse_argument_string($args));
+            $ctrl->output->println(unquote_or_die($args));
             return 1;
         },
     );

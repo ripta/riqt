@@ -313,7 +313,7 @@ around POSTBUILD => sub {
         code => sub {
             my ($ctrl, $args) = @_;
             my $sql = sprintf("ALTER SYSTEM KILL SESSION %s",
-                singlequote(parse_argument_string($args)),
+                singlequote(unquote_or_die($args)),
             );
             $self->do_and_display($sql, $ctrl->output);
             return 1;

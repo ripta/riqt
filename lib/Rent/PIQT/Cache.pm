@@ -59,7 +59,7 @@ sub POSTBUILD {
 
             my $path;
             if ($args) {
-                $path = parse_argument_string($args);
+                $path = unquote_or_die($args);
                 $path = $self->_build_key($path);
             }
 
