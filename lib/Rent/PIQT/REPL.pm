@@ -12,7 +12,10 @@ use Time::HiRes qw/gettimeofday tv_interval/;
 
 our $VERSION = '0.5.5';
 
-# Generate the 'isa' clause for some 'has' below.
+# Generate the 'isa' clause for some 'has' below. Given a C<$name>, this sub
+# generates an anonymous subroutine that in turn expects one argument that is
+# a string representing a class that is either C<Rent::PIQT::$name>, or mixes
+# a Moo::Role with the same qualified name.
 sub _generate_isa_for {
     my ($name) = @_;
     return sub {
@@ -22,7 +25,18 @@ sub _generate_isa_for {
     };
 }
 
-# Returns a subroutine that will search for a class under C<$base>.
+# Given a C<$base>, this sub generates an anonymous subroutine that in turn
+# expects one argument, C<$val>, which can be:
+# - an arrayref containing the C<$klass> name as the first element, and extra
+#   instantiation arguments; or
+# - a string representing the C<$klass> name; or
+# - an instance of the C<$base> class.
+#
+# If a match of C<$base::$klass> is found, then it is instantiated with any
+# instantiation arguments. If the C<$val> is already an instance, it is
+# immediately returned.
+#
+# If no match is found, this sub dies.
 sub _search_and_instantiate_under {
     my ($base) = @_;
     return sub {
@@ -40,7 +54,9 @@ sub _search_and_instantiate_under {
     }
 }
 
-# Searches for a C<$klass> under C<$base>, or dies trying.
+# Searches for a C<$klass> under C<$base>, or dies trying. Various capitalization
+# rules for C<$klass> will be tried. The C<$base> is taken as-is. The first match
+# for C<$klass::$base> is returned.
 sub _search_under {
     my ($base, $klass) = @_;
 
@@ -82,7 +98,14 @@ sub _search_under {
     Carp::croak("Cannot find '" . $klass . "' under '" . $base . "'; tried: " . join(', ', @permutations));
 }
 
-# Reference to cache handler. Required, defaults to memory cache.
+# Reference to cache handler. Each cache implementation takes its own set of
+# arguments. If a cache is instantiated by:
+#
+#   Rent::PIQT::Cache::Example->new('abc', 'def');
+#
+# then this attribute can be set on the REPL object using:
+#
+#   $repl->cache(['example', 'abc', 'def']);
 has 'cache' => (
     is => 'rw',
     isa => _generate_isa_for('Cache'),
@@ -91,7 +114,14 @@ has 'cache' => (
     trigger => \&_set_controller,
 );
 
-# Configuration container. Required, defaults to empty config.
+# Reference to configuration container. Each configuration implementation takes
+# its own set of arguments. If a configuration is instantiation by:
+#
+#   Rent::PIQT::Config::Example->new('abc', 'def');
+#
+# then this attribute can be set on the REPL object using:
+#
+#   $repl->config(['example', 'abc', 'def']);
 has 'config' => (
     is => 'rw',
     isa => _generate_isa_for('Config'),
@@ -100,8 +130,17 @@ has 'config' => (
     trigger => \&_set_controller,
 );
 
-# Database handler to support multiple database dialects. Required, but no
-# default is provided.
+# Database handler to support multiple database dialects. Each database takes
+# its own set of arguments, but some argument munging will happen.
+#
+#   $repl->db(['driver', database => "abc", username => "def", password => "xyz"]);
+#   $repl->db('driver://abc?username=def&password=xyz');
+#
+# will both instantiate the following driver:
+#
+#   Rent::PIQT::DB::Driver->new({database => 'abc', username => 'def', password => "xyz"});
+#
+# extra arguments can be specified as needed, depending on the database driver.
 has 'db' => (
     is => 'rw',
     isa => _generate_isa_for('DB'),
@@ -144,7 +183,8 @@ has 'output' => (
 );
 
 # The cache, config, db, and output attributes need a reference back to the
-# controller (that's us).
+# controller (that's us). This subroutine is automatically called as a trigger
+# after a component attribute is set.
 sub _set_controller {
     my ($self, $attr) = @_;
     $attr->controller($self);
@@ -152,7 +192,8 @@ sub _set_controller {
     return $attr;
 }
 
-# The verbosity level
+# The verbosity level. While the configuration container is also aware of the
+# verbosity level, this attribute holds the authoritative value.
 has 'verbose' => (
     is => 'rw',
     required => 0,
@@ -168,7 +209,8 @@ sub _build__commands {
     return {};
 }
 
-# Flag whether process is done or not.
+# Flag whether process is done or not. An interactive session will end once
+# this is set to a truth value.
 has '_done' => (
     is => 'rw',
     isa => sub { die "Done flag must be Bool" if ref $_[0] },
@@ -232,6 +274,7 @@ sub _build__term {
     return $t;
 }
 
+# On-destroy hook to ensure that the buffer has been executed in its entirety.
 sub _verify_buffer {
     my ($self, $buffer) = @_;
     return unless $buffer;
@@ -272,6 +315,7 @@ sub BUILD {
         persist => 0,
     );
 
+    # Handle internal help command
     $self->register('help', {
         signature => ['%s', '%s <command>'],
         help => q{
@@ -299,11 +343,15 @@ sub BUILD {
             my ($ctrl, @args) = @_;
             my $o = $ctrl->output;
 
+            # Re-join the arguments; default to a meta help, uppercase them, trim
+            # whitespace, and unsingle-quote
             my $args = join(' ', @args) || 'help';
             $args = uc $args;
             $args =~ s/^\s+|\s+$//g;
             $args = normalize_single_quoted($args);
 
+            # Show warning on multiple, unquoted arguments; this'll teach the
+            # user, right?
             if (scalar(@args) > 1) {
                 if (!defined($ctrl->config->help_warnings) || $ctrl->config->help_warnings) {
                     $o->warnf("Too many arguments to HELP. Arguments with whitespaces should be");
@@ -318,6 +366,7 @@ sub BUILD {
                 }
             }
 
+            # If command doesn't exist, suggest next steps
             unless (exists $ctrl->_commands->{$args}) {
                 $o->errorf("Unknown command %s. Type 'SHOW COMMANDS' for full list.",
                     quote($args),
@@ -325,12 +374,15 @@ sub BUILD {
                 return 1;
             }
 
+            # Retrieve the command information
             my $cmd_info = $ctrl->_commands->{$args};
 
+            # Print out the command name
             $o->info;
             $o->info($o->colorize("NAME", "bold white"));
             $o->info($o->reindent($args, 1));
 
+            # Print out command usage synopsis / syntax
             $o->info;
             $o->info($o->colorize("SYNOPSIS", "bold white"));
             if (ref $cmd_info->{'signature'} eq 'ARRAY') {
@@ -341,6 +393,7 @@ sub BUILD {
                 $o->infof($o->reindent($cmd_info->{'signature'}, 1), $args);
             }
 
+            # Print out a description, if available
             if (defined $cmd_info->{'help'}) {
                 $o->info;
                 $o->info($o->colorize("DESCRIPTION", "bold white"));
@@ -351,6 +404,7 @@ sub BUILD {
         },
     });
 
+    # Command to show all commands available
     $self->register('show commands', {
         help => q{
             List all available commands and which package provides each of them. In verbose
@@ -561,11 +615,22 @@ sub internal_commands {
     return sort keys %{ $self->_commands };
 }
 
-# Load a plugin and install it dynamically.
+# Load a plugin and install it dynamically. Plugins are loaded after all
+# components are hooked in and ready, but before any input (commands or
+# query) is processed.
+#
+# The plugin name, if contains ::, will be taken as-is. Any :: at the
+# beginning will be removed.
+#
+# If the plugin name doesn't contain ::, then it will be searched under the
+# Rent::PIQT::Plugin namespace.
+#
+# If a plugin has already been loaded, it will not be reloaded.
 sub load_plugin {
     my ($self, $plugin_name) = @_;
     my $plugin = undef;
 
+    # Search for the plugin name, which can be an absolute or a relative name
     if ($plugin_name =~ /::/) {
         $plugin_name =~ s/^:://;
         $plugin = eval {
@@ -577,6 +642,7 @@ sub load_plugin {
         $plugin = eval { _search_under('Rent::PIQT::Plugin', $plugin_name) };
     }
 
+    # Instantiate the plugin if a matching class could be loaded
     if ($plugin) {
         if (exists $self->{'plugins'}->{$plugin}) {
             $self->output->warnf("Plugin %s has already been loaded",
@@ -611,11 +677,15 @@ sub load_plugin {
     }
 }
 
-# Process a line of SQL, command, or block. Returns:
+# Process a single line of SQL, command, or block. Returns:
 #  0 if the query couldn't be processed because it was incomplete;
 # +1 if the query was successful;
 # +2 if the query was an internal command;
 # +4 if the query was an SQL query.
+#
+# Return values can be a combination of the above. For instance, the value +3
+# implies that the internal command was successful, while a value of +6 means
+# that the SQL query was generated internally through munging and failed.
 sub process {
     my ($self, $buffer, $line) = @_;
 
@@ -648,6 +718,8 @@ sub process {
             $$buffer = '';
             return 3;
         }
+
+        # Bail out and clear the buffer if the internal command failed
         if ($@) {
             $$buffer = '';
             die $@;
@@ -664,6 +736,9 @@ sub process {
     $$buffer = $self->db->sanitize($$buffer);
 
     # Prepare and execute the query
+    #
+    # TODO: part of this functionality is now defined in ->db->do_and_display()
+    # so it might be time to refactor this code
     $self->output->start_timing;
     if ($self->db->prepare($$buffer, save_query => 1) && $self->db->execute) {
         $self->output->infof("Query: %s", $$buffer) if $$buffer && $self->config->echo;
@@ -690,11 +765,46 @@ sub process {
 
 # Register an internal command. Multiple commands can be registered at the same
 # time by specifying multiple command names in the arguments. The last argument
-# must be a code reference.
+# must either be a code reference, or a hashref of options.
 #
-# The code reference should accept multiple arguments. The first argument is a
-# reference to the REPL instance. The rest of the arguments are the pre-parsed
-# command arguments as entered in the REPL interface.
+# The hashref of options may contain the following keys:
+# - code: a code reference that will be run when the command is executed;
+# - help: a descriptive, preformatted body of text displayed in help;
+# - signature: an arrayref of valid signatures of the command, where each
+#   element of the arrayref may contain %s, which will be interpolated with the
+#   command name; and
+# - slurp: if false value (default) then the code reference is in pre-parse
+#   mode, while if it has a true value, then the coderef is in slurp mode.
+#
+# The code reference is the only required argument (or hashref option).
+#
+# The code reference in pre-parse mode will have at least one argument: a ref
+# to the REPL instance. Additional arguments will be passed in according to the
+# parsing rules, similar to the Linux command line:
+# - each word is its own argument;
+# - single- or double-quotes can delimit arguments that contain whitespace; and
+# - single- and double-quotes, and backslashes can be escaped using a backslash.
+#
+# The code reference in slurp mode will have at least one argument, as in pre-
+# parse mode, but at most two arguments. The only other argument would be the
+# entire argument string, as-is, without pre-parsing.
+#
+# For example, if the command TEST is called:
+#
+#   TEST abc 'def ghi' "xyz\"123"
+#
+# then the code reference will receive these arguments:
+#
+#   ($repl, "abc", "'def ghi'", "\"xyz\\\"123\"")
+#
+# in pre-parse mode, and:
+#
+#   ($repl, "abc 'def ghi' \"xyz\\\"123\"")
+#
+# in slurp mode.
+#
+# Command registration will also keep track of the package, the file, and the
+# line number from which the registration occurred.
 sub register {
     my ($self, @args) = @_;
     my ($c_pkg, $c_file, $c_line) = caller;
@@ -732,7 +842,8 @@ sub register {
 }
 
 # The main loop of the REPL, which handles all four stages, with the option
-# to run a single query, if provided.
+# to run a single query, if provided. This is the main entry point for queries,
+# if a query should be run, or an interactive session should be started.
 sub run {
     my ($self, $query) = @_;
 
@@ -797,7 +908,8 @@ sub run_file {
     return;
 }
 
-# Run a single line of query.
+# Run a query from a string. The query string may itself contain multiple lines,
+# which can be either a database query or an internal command.
 sub run_query {
     my ($self, $query) = @_;
     $query .= ';' unless $query =~ /;\s*$/;
@@ -885,7 +997,8 @@ sub sanitize_death {
     return $str;
 }
 
-# Timing tick in milliseconds since start of object.
+# Timing tick in milliseconds since start of object. Kind of sort of useful
+# when debugging.
 sub tick {
     my ($self) = @_;
     return tv_interval($self->{'start'}) * 1000;
