@@ -543,7 +543,6 @@ sub execute {
             return $self->_commands->{$command_name}->{'code'}->($self, $args);
         } else {
             my @args = argstring_to_array($args);
-            @args = ($args) unless @args;
 
             $self->output->debugf("    ArgArray :");
             foreach (0..$#args) {

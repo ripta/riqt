@@ -34,6 +34,7 @@ our @EXPORT_OK = ();
 
 sub argstring_to_array {
     my ($str, %opts) = @_;
+    return () unless $str;
     return quotewords('\s+', 1, $str);
 }
 
