@@ -250,7 +250,6 @@ sub _build__term {
         $t->have_readline_history(1) if $t->can('have_readline_history');
 
         $o->info("Welcome to piqt " . $self->version . " with GNU readline support");
-        $o->info;
     } elsif ($t->ReadLine eq 'Term::ReadLine::Perl') {
         $t->Attribs->{'MaxHistorySize'} = $s;
         $t->have_readline_history(1) if $t->can('have_readline_history');
@@ -258,16 +257,15 @@ sub _build__term {
         $o->warn("piqt: Command line history will not survive multiple sessions.");
         $o->warn("      Install Term::ReadLine::Gnu to fix that.");
         $o->info("Welcome to piqt " . $self->version . " with Perl readline support");
-        $o->info;
     } else {
         $o->warn("piqt: Command line history will probably not survive multiple");
         $o->warn("      sessions. Install Term::ReadLine::Gnu to ensure it.");
         $o->infof("Welcome to piqt " . $self->version . " with %s readline support", $t);
-        $o->info;
     }
 
     # Information about some commands
     $o->info("Type HELP for meta help, SHOW COMMANDS for internal commands, or EXIT");
+    $o->info;
 
     # Save back the history settings
     $self->config->history_size($s);
