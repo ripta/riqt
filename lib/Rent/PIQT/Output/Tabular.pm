@@ -42,7 +42,7 @@ sub finish {
                 push @fmt_rec,  '%' . $self->field_sizes->[$idx] . 's';
             } elsif ($type eq 'float') {
                 push @fmt_head, '%' . $self->field_sizes->[$idx] . 's';
-                push @fmt_rec,  '%' . $self->field_sizes->[$idx] . 'f';
+                push @fmt_rec,  '%' . $self->field_sizes->[$idx] . 's';
             } elsif ($type eq 'bool') {
                 push @fmt_head, '%-' . $self->field_sizes->[$idx] . 's';
                 push @fmt_rec,  '%-' . $self->field_sizes->[$idx] . 's';
