@@ -188,7 +188,6 @@ has 'output' => (
 sub _set_controller {
     my ($self, $attr) = @_;
     $attr->controller($self);
-    printf "REPL::_set_controller: ready=%s attr=%s\n", $self->{'is_ready'} // 'undef', $attr // 'undef';
     $attr->POSTBUILD if $self->{'is_ready'} && $attr->can('POSTBUILD');
     return $attr;
 }
@@ -303,6 +302,7 @@ sub BUILD {
         }
     }
 
+    $self->output->debugf("%s is ready", $self);
     $self->{'is_ready'} = 1;
 
     # Register verbosity setting after component POSTBUILDs, so that we can

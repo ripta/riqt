@@ -54,7 +54,6 @@ sub BUILDARGS {
 
 sub POSTBUILD {
     my ($self) = @_;
-    #printf STDERR "POSTBUILD: %s\n", $self;
 
     $self->controller->output->debugf("Output driver %s is ready: OUT=(%s) ERR=(%s)",
         ref $self,
@@ -67,13 +66,15 @@ sub POSTBUILD {
         only => 'i',
         hook => sub {
             my ($config, $name, $old_value, $new_value) = @_;
-            printf STDERR "MODE HOOK FOR %s, current active output driver is %s; name=%s old=%s new=%s\n",
+            my $o = $config->controller->output;
+
+            $o->debugf("MODE HOOK FOR %s, current active output driver is %s; name=%s old=%s new=%s\n",
                 quote($self) // 'undef',
                 quote($config->controller->output) // 'undef',
                 $name // 'undef',
                 $old_value // 'undef',
                 $new_value // 'undef',
-            ;
+            );
 
             $config->controller->output([
                 $new_value,
