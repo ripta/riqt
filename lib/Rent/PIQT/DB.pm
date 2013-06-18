@@ -184,7 +184,7 @@ sub display {
     my ($self, $output, $limit) = @_;
     my $row_num = 0;
 
-    $limit = 0 if $limit < 0;
+    $limit = 0 if $limit && $limit < 0;
 
     $output->start($self->field_prototypes);
     while (my $row = $self->fetch_array) {
