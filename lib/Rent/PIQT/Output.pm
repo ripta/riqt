@@ -152,6 +152,12 @@ sub debugf {
     $self->debug(sprintf($msg, @args));
 }
 
+sub debugfq {
+    my ($self, $msg, @args) = @_;
+    $msg ||= "";
+    $self->debugf($msg, map { quote printable $_ } @args);
+}
+
 sub error {
     my ($self, $msg) = @_;
 
@@ -164,6 +170,12 @@ sub errorf {
     my ($self, $msg, @args) = @_;
     $msg ||= "";
     $self->error(sprintf($msg, @args));
+}
+
+sub errorfq {
+    my ($self, $msg, @args) = @_;
+    $msg ||= "";
+    $self->errorf($msg, map { quote printable $_ } @args);
 }
 
 sub finish_timing {
@@ -201,6 +213,12 @@ sub infof {
     $self->info(sprintf($msg, @args));
 }
 
+sub infofq {
+    my ($self, $msg, @args) = @_;
+    $msg ||= "";
+    $self->infof($msg, map { quote printable $_ } @args);
+}
+
 sub ok {
     my ($self, $msg) = @_;
 
@@ -213,6 +231,12 @@ sub okf {
     my ($self, $msg, @args) = @_;
     $msg ||= "";
     $self->ok(sprintf($msg, @args));
+}
+
+sub okfq {
+    my ($self, $msg, @args) = @_;
+    $msg ||= "";
+    $self->okf($msg, map { quote printable $_ } @args);
 }
 
 sub print {
@@ -275,6 +299,12 @@ sub warnf {
     my ($self, $msg, @args) = @_;
     $msg ||= "";
     $self->warn(sprintf($msg, @args));
+}
+
+sub warnfq {
+    my ($self, $msg, @args) = @_;
+    $msg ||= "";
+    $self->warnf($msg, map { quote printable $_ } @args);
 }
 
 1;
