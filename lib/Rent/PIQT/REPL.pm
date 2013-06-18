@@ -303,6 +303,8 @@ sub BUILD {
         }
     }
 
+    $self->{'is_ready'} = 1;
+
     # Register verbosity setting after component POSTBUILDs, so that we can
     # override things if any component drivers override it, e.g., the config
     # driver can load a different verbose setting, which we don't want sticking
@@ -567,8 +569,6 @@ sub BUILD {
             return 1;
         },
     });
-
-    $self->{'is_ready'} = 1;
 }
 
 # Execute an internal command.

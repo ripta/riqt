@@ -62,6 +62,7 @@ sub POSTBUILD {
         $self->err ? $self->err->fileno : '',
     );
 
+    $self->controller->config->unregister('mode');
     $self->controller->config->register('mode',
         only => 'i',
         hook => sub {

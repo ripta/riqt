@@ -310,4 +310,16 @@ sub run_pending_hooks {
     return 1;
 }
 
+sub unregister {
+    my ($self, @args) = @_;
+    my $command = lc shift @args;
+    return unless exists $self->{'hooks'}->{$command};
+
+    $self->controller->output->debugf("Unregister all hooks for %s => [%s]",
+        quote($command),
+        join(", ", @{$self->{'hooks'}->{$command}}),
+    );
+    $self->{'hooks'}->{$command} = [ ];
+}
+
 1;
