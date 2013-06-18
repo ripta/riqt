@@ -265,6 +265,9 @@ sub _build__term {
         $o->info;
     }
 
+    # Information about some commands
+    $o->info("Type HELP for meta help, SHOW COMMANDS for internal commands, or EXIT");
+
     # Set back the history file
     $self->config->history_file($h);
 
