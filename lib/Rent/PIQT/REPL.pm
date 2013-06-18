@@ -261,7 +261,7 @@ sub _build__term {
     } else {
         $o->warn("piqt: Command line history will probably not survive multiple");
         $o->warn("      sessions. Install Term::ReadLine::Gnu to ensure it.");
-        $o->info("Welcome to piqt " . $self->version . " with unknown readline support");
+        $o->infof("Welcome to piqt " . $self->version . " with %s readline support", $t);
         $o->info;
     }
 
