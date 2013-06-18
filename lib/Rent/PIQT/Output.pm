@@ -47,8 +47,10 @@ sub BUILDARGS {
     return $proto if ref $proto eq 'HASH';
     return $proto unless $proto->can('err') && $proto->can('out');
     return {
-        err => $proto->err,
-        out => $proto->out,
+        err             => $proto->err,
+        out             => $proto->out,
+        character_set   => $proto->character_set,
+        unicode         => $proto->unicode,
     };
 }
 
@@ -61,6 +63,8 @@ sub POSTBUILD {
         $self->err ? $self->err->fileno : '',
     );
 
+    # Unregister any existing mode hooks, and register a new one; without
+    # unregistering first, the mode hook would run in a loop
     $self->controller->config->unregister('mode');
     $self->controller->config->register('mode',
         only => 'i',
