@@ -227,7 +227,7 @@ sub POSTBUILD {
 }
 
 sub options_for {
-    my ($self, $name, $key) = @_;
+    my ($self, $name, $key, $value) = @_;
     $name = lc $name;
 
     my $opts = exists $self->{'opts'}->{$name} ? $self->{'opts'}->{$name} : {};
@@ -238,7 +238,17 @@ sub options_for {
     $opts->{'read'}     = 1 unless exists $opts->{'read'};
     $opts->{'write'}    = 1 unless exists $opts->{'write'};
 
-    return $key ? $opts->{$key} : { %$opts };
+    if (defined $value) {
+        my $old_value = exists($opts->{$key}) ? $opts->{$key} : undef;
+        $opts->{$key} = $value;
+        return $old_value;
+    } else {
+        return defined($key)
+            ? exists($opts->{$key})
+                ? $opts->{$key}
+                : undef
+            : { %$opts };
+    }
 }
 
 # register($command, $hook);

@@ -237,6 +237,7 @@ has '_term'   => (
 sub _build__term {
     my ($self) = @_;
     my $h = $self->config->history_file || $ENV{'HOME'} . '/.piqt_history';
+    my $s = $self->config->history_size || $ENV{'HISTSIZE'} || 2000;
     my $o = $self->output;
 
     my $t = Term::ReadLine->new('piqt');
@@ -244,14 +245,14 @@ sub _build__term {
     # Depending on the ReadLine driver---and unfortunately we have to compare
     # by string---we have to set up history differently
     if ($t->ReadLine eq 'Term::ReadLine::Gnu') {
-        $t->stifle_history($ENV{'HISTSIZE'} || 2000);
+        $t->stifle_history($s);
         $t->ReadHistory($h) if -f $h;
         $t->have_readline_history(1) if $t->can('have_readline_history');
 
         $o->info("Welcome to piqt " . $self->version . " with GNU readline support");
         $o->info;
     } elsif ($t->ReadLine eq 'Term::ReadLine::Perl') {
-        $t->Attribs->{'MaxHistorySize'} = 500;
+        $t->Attribs->{'MaxHistorySize'} = $s;
         $t->have_readline_history(1) if $t->can('have_readline_history');
 
         $o->warn("piqt: Command line history will not survive multiple sessions.");
@@ -268,7 +269,8 @@ sub _build__term {
     # Information about some commands
     $o->info("Type HELP for meta help, SHOW COMMANDS for internal commands, or EXIT");
 
-    # Set back the history file
+    # Save back the history settings
+    $self->config->history_size($s);
     $self->config->history_file($h);
 
     # Attach a completion handler
