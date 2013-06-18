@@ -193,6 +193,37 @@ sub POSTBUILD {
             return 1;
         }
     });
+
+    $self->controller->register('show components', {
+        code => sub {
+            my ($ctrl, @rest) = @_;
+            die "Syntax error: SHOW COMPONENTS does not take any arguments" if @rest;
+
+            my $o = $ctrl->output;
+
+            $o->start_timing;
+            $o->start(
+                [
+                    {name => "Component",  type => "str", length => 255},
+                    {name => "Class", type => "str", length => 255},
+                    {name => "Instance", type => "str", length => 255},
+                ]
+            );
+
+            my $rows = 0;
+            foreach my $key (qw/cache config db output/) {
+                my $value = $ctrl->$key;
+                my ($klass, $address) = split /=/, $value, 2;
+                $o->record([$key, $klass, $address]);
+                $rows++;
+            }
+
+            $o->finish;
+            $o->finish_timing($rows);
+
+            return 1;
+        },
+    });
 }
 
 sub options_for {
