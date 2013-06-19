@@ -337,6 +337,222 @@ around POSTBUILD => sub {
             return 1;
         },
     });
+
+    $self->controller->register('tblstat', 'tblstatus', {
+        signature => [
+            '%s <name>',
+            '%s <owner>.<name>',
+        ],
+        help => q{
+            Retrieve information about a specific table. Arguments should not be quoted.
+
+            If an owner is specified, this command will search for a table that the
+            current user has access to. Otherwise, the current user is searched.
+
+            Information displayed covers:
+            - the validity of the table, creation date, and owner data;
+            - indexes defined for the table and all its columns and expressions;
+            - constraints defined for the table and its rules; and
+            - triggers defined for the table.
+        },
+        code => sub {
+            my ($ctrl, $object) = @_;
+            my $o = $ctrl->output;
+
+            my $table = uc($object);
+            my $owner = $table =~ s/(\w+)\.// ? $1 : undef;
+            my $scope = $owner ? 'all' : 'user';
+            my $owner_clause = $owner ? "AND t.owner = '$owner'" : '';
+
+            my $object_type_sql = qq[
+                SELECT
+                    o.owner,
+                    o.status,
+                    o.created
+                FROM
+                    all_objects o
+                WHERE
+                    o.object_type = 'TABLE'
+                AND o.object_name = '$table'
+                $owner_clause
+            ];
+            unless ($self->do($object_type_sql)) {
+                $o->error($self->last_error);
+                return 1;
+            }
+
+            my @matches = $self->fetch_all_arrays;
+            if (scalar(@matches) == 0) {
+                $o->errorf("Object %s doesn't exist", quote($object));
+                return 1;
+            } elsif (scalar(@matches) > 1) {
+                $o->warnf("There are %s matches for %s:", scalar(@matches), quote($object));
+                foreach (@matches) {
+                    $o->warnf("- %s.%s", $_->[0], $table);
+                }
+            }
+
+            my $table_sql = qq[
+                SELECT DISTINCT
+                    t.table_name,
+                    t.status,
+                    t.tablespace_name,
+                    t.num_rows,
+                    t.avg_row_len,
+                    t.last_analyzed
+                FROM
+                    ${scope}_tables t
+                WHERE
+                    t.table_name = '$table'
+                $owner_clause
+            ];
+            $self->do_and_display($table_sql, $o);
+
+            my $indexes_sql = qq{
+                SELECT
+                    index_name,
+                    index_type,
+                    status,
+                    uniqueness,
+                    tablespace_name,
+                    num_rows
+                FROM
+                    all_indexes
+                WHERE
+                    table_name = '$table'
+                $owner_clause
+                ORDER BY
+                    index_name
+            };
+            $self->do_and_display($indexes_sql, $o);
+
+            # my $column_sql = qq{
+            #     SELECT
+            #         aic.column_name,
+            #         atc.data_default,
+            #         aic.descend
+            #     FROM
+            #         all_ind_columns aic,
+            #         all_tab_cols atc
+            #     WHERE
+            #         aic.index_name = ?
+            #     AND aic.table_owner = atc.owner
+            #     AND aic.table_name = atc.table_name
+            #     AND aic.column_name = atc.column_name
+            #     ORDER BY
+            #         aic.column_position
+            # };
+            # my $column_sub = sub {
+            #     my ($db, $row) = @_;
+
+            #     $sth->execute($row->[0]);
+            #     print "             COLUMNS: ", lc join(', ', map { ($_->[0] =~ /\$$/ ? $_->[1] : $_->[0]) . " $_->[2]" } @{$sth->fetchall_arrayref}), "\n";
+            # };
+
+            # print "INDEXES:\n\n";
+            # $self->display_function(\&DatabaseManager::_format_data_mysql);
+            # $self->process_query(qq{
+            #     SELECT
+            #         index_name,
+            #         index_type,
+            #         status,
+            #         uniqueness "unique",
+            #         tablespace_name,
+            #         num_rows
+            #     FROM
+            #         all_indexes
+            #     WHERE
+            #         table_name = '$table'
+            #     ORDER BY
+            #         index_name
+            # }, {
+            #     POST_REC => $column_sub
+            # });
+            # print "\n";
+
+            # $sth = $self->connection->prepare_cached(q{
+            #     SELECT /* PIQT::table_status::indexes */
+            #         ct.constraint_type,
+            #         ct.index_name,
+            #         ct.r_constraint_name,
+            #         ct.search_condition,
+            #         ct2.table_name fk_table
+            #     FROM
+            #         all_constraints ct
+            #     LEFT JOIN all_constraints ct2 ON ct.r_constraint_name = ct2.constraint_name
+            #     WHERE ct.constraint_name = ?
+            # });
+            # $column_sub = sub {
+            #     my ($db, $row) = @_;
+
+            #     $sth->execute($row->[0]);
+            #     my ($type, $index, $ref, $sc, $fktbl) = $sth->fetchrow_array;
+            #     print "             REFERENCES ",
+            #           $type eq 'P' ? "INDEX     : $index"
+            #         : $type eq 'R' ? "PK        : of $fktbl ($ref)"
+            #         :                "CONDITION : $sc", "\n";
+            #     $sth->finish;
+            # };
+
+            # print "CONSTRAINTS:\n\n";
+            # $self->process_query(qq{
+            # SELECT /* PIQT::table_status::constraints */
+            #     ct.constraint_name,
+            #     SUBSTR(
+            #         DECODE(ct.constraint_type,
+            #                 'P', 'Primary Key',
+            #                 'R', 'Foreign Key',
+            #                 'U', 'Unique',
+            #                 'C', 'Check',
+            #                      'Other'
+            #         ),
+            #     1, 11) as "type",
+            #     ct.validated,
+            #     ct.status,
+            #     ct.deferred,
+            #     ct.deferrable
+            # FROM
+            #     all_constraints ct
+            # WHERE
+            #     ct.table_name = '$table'
+            # ORDER BY
+            #     DECODE(ct.constraint_type,
+            #             'P', 1,
+            #             'R', 2,
+            #             'U', 3,
+            #             'C', 4,
+            #             5
+            #     ),
+            #     ct.constraint_name
+            # }, {
+            #     POST_REC => $column_sub
+            # });
+            # print "\n";
+
+            # $column_sub = sub {
+            # };
+
+            # print "TRIGGERS:\n\n";
+            # $self->process_query(qq{
+            # SELECT /* PIQT::table_status::triggers */
+            #     tg.trigger_name,
+            #     tg.trigger_type || ', ' || tg.triggering_event as "trigger_type",
+            #     tg.status,
+            #     tg.action_type
+            # FROM
+            #     all_triggers tg
+            # WHERE
+            #     tg.table_name = '$table'
+            # ORDER BY
+            #     trigger_name
+            # }, {
+            #     POST_REC => $column_sub
+            # });
+
+            # $self->display_function($prev_dispfunc);
+            return 1;
+        }
+    });
 };
 
 # Transform the output of describe_object into something more palatable, which

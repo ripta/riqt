@@ -238,6 +238,18 @@ sub execute {
     }
 }
 
+sub fetch_all_arrays {
+    my ($self) = @_;
+    return unless $self->statement;
+    return $self->statement->fetchall_arrayref;
+}
+
+sub fetch_all_hashes {
+    my ($self) = @_;
+    return unless $self->statement;
+    return $self->statement->fetchall_hashref;
+}
+
 sub fetch_array {
     my ($self) = @_;
     return unless $self->statement;
