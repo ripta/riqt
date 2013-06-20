@@ -362,18 +362,19 @@ around POSTBUILD => sub {
             my $table = uc($object);
             my $owner = $table =~ s/(\w+)\.// ? $1 : undef;
             my $scope = $owner ? 'all' : 'user';
-            my $owner_clause = $owner ? "AND t.owner = '$owner'" : '';
+            my $owner_clause = $owner ? "AND owner = '$owner'" : '';
+            my $select_owner = $owner ? "owner, " : '';
 
             my $object_type_sql = qq[
                 SELECT
-                    o.owner,
-                    o.status,
-                    o.created
+                    owner,
+                    status,
+                    created
                 FROM
-                    all_objects o
+                    all_objects
                 WHERE
-                    o.object_type = 'TABLE'
-                AND o.object_name = '$table'
+                    object_type = 'TABLE'
+                AND object_name = '$table'
                 $owner_clause
             ];
             unless ($self->do($object_type_sql)) {
@@ -381,35 +382,37 @@ around POSTBUILD => sub {
                 return 1;
             }
 
-            my @matches = $self->fetch_all_arrays;
-            if (scalar(@matches) == 0) {
-                $o->errorf("Object %s doesn't exist", quote($object));
+            my $matches = $self->fetch_all_arrays;
+            if (scalar(@$matches) == 0) {
+                $o->errorf("Table %s doesn't exist", quote($table));
                 return 1;
-            } elsif (scalar(@matches) > 1) {
-                $o->warnf("There are %s matches for %s:", scalar(@matches), quote($object));
-                foreach (@matches) {
+            } elsif (scalar(@$matches) > 1) {
+                $o->warnf("There are %s matches for %s:", scalar(@$matches), quote($object));
+                foreach (@$matches) {
                     $o->warnf("- %s.%s", $_->[0], $table);
                 }
             }
 
             my $table_sql = qq[
                 SELECT DISTINCT
-                    t.table_name,
-                    t.status,
-                    t.tablespace_name,
-                    t.num_rows,
-                    t.avg_row_len,
-                    t.last_analyzed
+                    $select_owner
+                    table_name,
+                    status,
+                    tablespace_name,
+                    num_rows,
+                    avg_row_len,
+                    last_analyzed
                 FROM
-                    ${scope}_tables t
+                    ${scope}_tables
                 WHERE
-                    t.table_name = '$table'
+                    table_name = '$table'
                 $owner_clause
             ];
             $self->do_and_display($table_sql, $o);
 
-            my $indexes_sql = qq{
+            my $indexes_sql = qq[
                 SELECT
+                    $select_owner
                     index_name,
                     index_type,
                     status,
@@ -417,13 +420,13 @@ around POSTBUILD => sub {
                     tablespace_name,
                     num_rows
                 FROM
-                    all_indexes
+                    ${scope}_indexes
                 WHERE
                     table_name = '$table'
                 $owner_clause
                 ORDER BY
                     index_name
-            };
+            ];
             $self->do_and_display($indexes_sql, $o);
 
             # my $column_sql = qq{

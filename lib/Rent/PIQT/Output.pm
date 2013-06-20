@@ -1,5 +1,6 @@
 package Rent::PIQT::Output;
 
+use Data::Dumper;
 use Moo::Role;
 use Term::ANSIColor;
 use Time::HiRes qw/gettimeofday tv_interval/;
@@ -160,6 +161,13 @@ sub debugfq {
     my ($self, $msg, @args) = @_;
     $msg ||= "";
     $self->debugf($msg, map { quote printable $_ } @args);
+}
+
+sub dump {
+    my ($self, @objects) = @_;
+    foreach (@objects) {
+        $self->info(Dumper($_));
+    }
 }
 
 sub error {
