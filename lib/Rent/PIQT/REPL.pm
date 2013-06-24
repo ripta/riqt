@@ -968,9 +968,8 @@ sub run_repl {
 
     $self->_verify_buffer($buffer);
 
-    # Touch the cache (?)
+    # Save the cache contents
     # TODO: remove this and make it less error-prone in the future
-    $self->cache->touch;
     $self->cache->save;
 
     # Save back the config file
