@@ -23,7 +23,7 @@ sub _build_driver {
             'RaiseError'  => 0,
             'PrintError'  => 0,
         }
-    );
+    ) or die DBI->errstr;
 }
 
 # Transforms Oracle->new($db, $user, $pass) into Oracle->new(\%opts).
