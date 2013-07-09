@@ -167,6 +167,8 @@ if ($auto_connect) {
             username => $db_user,
             password => $db_pass,
         ];
+    } else {
+        print STDERR "Could not load Company::Util: no password will be used\n" if $verbose;
     }
 }
 
