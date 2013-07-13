@@ -184,7 +184,9 @@ sub display {
     my ($self, $output, $limit) = @_;
     my $row_num = 0;
 
+    $limit //= 0;
     $limit = 0 if $limit && $limit < 0;
+    $output->debugf("Limit set to %s", $limit);
 
     $output->start($self->field_prototypes);
     while (my $row = $self->fetch_array) {
@@ -230,9 +232,13 @@ sub auth_info {
 
 sub execute {
     my ($self, @args) = @_;
+    my $o = $self->controller->output;
+
     if ($self->statement->execute(@args)) {
+        $o->debugf("Statement executed with arguments (%s)", join(", ", @args));
         return 1;
     } else {
+        $o->debugf("Statement cannot be executed: %s", $self->statement->errstr);
         $self->last_error($self->statement->errstr);
         return 0;
     }
@@ -390,6 +396,7 @@ sub object_names {
 
 sub prepare {
     my ($self, $query, %opts) = @_;
+    my $o = $self->controller->output;
     $opts{'save_query'} //= 0;
 
     unless ($query) {
@@ -399,10 +406,12 @@ sub prepare {
 
     my $sth = $self->driver->prepare($query);
     if ($sth) {
+        $o->debugf("Query prepared as %s", $sth);
         $self->statement($sth);
         $self->last_query($query) if $opts{'save_query'};
         return 1;
     } else {
+        $o->debugf("Query could not be prepared: %s", $self->driver->errstr);
         $self->last_error($self->driver->errstr);
         $self->statement(undef);
         return 0;

@@ -752,6 +752,12 @@ sub process {
         if ($self->db->has_result_set) {
             my $limit = $self->config->limit || $self->config->deflimit || 0;
             $row_num = $self->db->display($self->output, $limit);
+            $self->output->debugf("Query has finished with %s rows displayed and %s rows affected",
+                $row_num,
+                $self->db->rows_affected,
+            );
+        } else {
+            $self->output->debugf("Query has no result set");
         }
 
         $self->output->finish_timing($row_num || $self->db->rows_affected);
