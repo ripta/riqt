@@ -319,9 +319,9 @@ around POSTBUILD => sub {
 
     $self->controller->register('show locks', {
         signature => [
-            'SHOW LOCKS',
-            'SHOW LOCKS ACTIVE',
-            'SHOW LOCKS WHERE <where_clause>',
+            '%s',
+            '%s ACTIVE',
+            '%s WHERE <where_clause>',
         ],
         help => q{
             Show all locked objects and sessions accessing or locking those objects across

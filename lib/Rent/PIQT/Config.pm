@@ -125,10 +125,55 @@ sub POSTBUILD {
     $self->controller->register('show', {
         signature => [
             '%s',
+            '%s <name>',
             '%s LIKE <criterion>',
             '%s =~ <regexp>',
         ],
         help => q{
+            Show configuration parameters, their settings, and their values. If no options
+            are specified, all parameters are shown.
+
+            If <name> is specified, only the exact match is shown, e.g.:
+
+                SHOW history_file
+                SHOW history_size
+
+            Alternatively, parameters may be filtered using a LIKE clause, or a regular
+            expression, e.g.:
+
+                SHOW LIKE 'history%'
+                SHOW =~ /^history/
+
+            Parameter settings shown are:
+
+                Modes:      Some parameters do not apply in some modes of operation.
+                            Values are:
+
+                            f:  File mode, which happens when a script is loaded and
+                                    executed using the @ prefix.
+                            i:  Interactive mode, which happens when a prompt is displayed
+                                    to the user, and the program awaits for user input.
+                            o:  One-liner mode, which happens when a single query is
+                                    specified from the command line, most likely as a
+                                    command-line argument to this script.
+
+                Readable:   A boolean setting (YES or NO) indicating whether the parameter
+                            can be read back out after it is set. Most parameters will be
+                            readable; ones that aren't are internal settings that have no
+                            meaning to the end user, and its value will not be shown.
+
+                Writeable:  A boolean setting (YES or NO) indicating whether the parameter
+                            can be set during execution time. Some parameters require a
+                            restart, and therefore cannot be written to during runtime.
+
+                Persistable:    A boolean setting indicating whether the parameter will be
+                            saved onto disk (as the startup file) after the end of the
+                            script. Some parameters are ephemeral, or are set up after
+                            certain operations have occurred, and therefore not saved.
+
+                            In some cases, a parameter may be specified in the startup
+                            file and processed correctly even when it is not persistable.
+                            However, this behavior should not be relied upon.
         },
         code => sub {
             my ($self, $mode, $col_spec) = @_;
