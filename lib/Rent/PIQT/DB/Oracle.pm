@@ -163,6 +163,7 @@ around POSTBUILD => sub {
         signature => [
             '%s FUNCTION <object_name>',
             '%s MATERIALIZED VIEW <object_name>',
+            '%s PACKAGE <object_name>',
             '%s PROCEDURE <object_name>',
             '%s TABLE <object_name>',
             '%s VIEW <object_name>',
