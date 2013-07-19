@@ -318,6 +318,24 @@ around POSTBUILD => sub {
     });
 
     $self->controller->register('show locks', {
+        signature => [
+            'SHOW LOCKS',
+            'SHOW LOCKS ACTIVE',
+            'SHOW LOCKS WHERE <where_clause>',
+        ],
+        help => q{
+            Show all locked objects and sessions accessing or locking those objects across
+            all nodes in the cluster.
+
+            By default, the command shows all sessions having anything to do with all the
+            locked objects. When ACTIVE is specified, only active sessions, i.e., those
+            actively locking the objects, will be shown. This is a shortcut to the following
+            SHOW LOCKS WHERE command:
+
+                SHOW LOCKS WHERE session_status = 'ACTIVE'
+
+            The SHOW LOCKS WHERE can also be used to specify arbitrary WHERE clauses.
+        },
         code => sub {
             my ($ctrl, @rest) = @_;
 
