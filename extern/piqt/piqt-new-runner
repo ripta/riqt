@@ -233,7 +233,7 @@ Generic options:
 
   -v, --verbose Be verbose and print debugging information when running.
                 Specify multiple times to print more debugging.
-  -h, --help    Print help and exit
+  -?, --help    Print help and exit
 
 Driver options:
 
