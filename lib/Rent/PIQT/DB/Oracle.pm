@@ -240,7 +240,6 @@ around POSTBUILD => sub {
                     type,
                     line,
                     position,
-                    message_number,
                     text
                 FROM
                     all_errors
