@@ -179,7 +179,7 @@ around POSTBUILD => sub {
             my ($ctrl, @args) = @_;
 
             my $obj = pop @args;
-            my $type = join ' ', @args;
+            my $type = uc join ' ', @args;
 
             die "Object type is missing." unless $type;
             die "Object name is missing." unless $obj;
