@@ -320,11 +320,21 @@ around POSTBUILD => sub {
     $self->controller->register('show locks', {
         code => sub {
             my ($ctrl, @rest) = @_;
-            die "Syntax error: command takes no arguments" if @rest;
 
-            my $sql = q{
+            my $where_clause;
+            if (@rest) {
+                if ($rest[0] =~ /^active$/i) {
+                    $where_clause = "WHERE s.status = 'ACTIVE'";
+                } elsif ($rest[0] =~ /^where$/i) {
+                    $where_clause = join(" ", @rest);
+                } else {
+                    die "Syntax error: unexpected " . $rest[0] . ", expected ACTIVE or WHERE";
+                }
+            }
+
+            my $sql = qq{
                 SELECT
-                    s.sid || ',' || s.serial# || '@' || s.inst_id AS session_id,
+                    s.sid || ',' || s.serial# || '\@' || s.inst_id AS session_id,
                     s.status AS session_status,
                     s.machine AS session_machine,
                     s.program AS session_program,
@@ -347,17 +357,20 @@ around POSTBUILD => sub {
                         'Other: ' || TO_CHAR(v.locked_mode)
                     ) AS lock_mode,
                     q.sql_text AS sql
-                FROM gv$locked_object v
-                    JOIN gv$lock l ON (l.id1 = v.object_id)
+                FROM gv\$locked_object v
+                    JOIN gv\$lock l ON (l.id1 = v.object_id)
                     LEFT JOIN dba_objects d ON (d.object_id = v.object_id)
-                    LEFT JOIN gv$session s ON (s.sid = v.session_id)
-                    LEFT JOIN gv$sql q ON (q.sql_id = s.sql_id)
+                    LEFT JOIN gv\$session s ON (s.sid = v.session_id)
+                    LEFT JOIN gv\$sql q ON (q.sql_id = s.sql_id)
+                $where_clause
                 ORDER BY
                     l.ctime DESC,
                     session_id
             };
 
-            $self->do_and_display($sql, $ctrl->output);
+            $ctrl->output->start_timing;
+            my $row_num = $self->do_and_display($sql, $ctrl->output);
+            $ctrl->output->finish_timing($row_num);
             return 1;
         },
     });
