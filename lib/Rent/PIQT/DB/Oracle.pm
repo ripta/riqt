@@ -212,6 +212,50 @@ around POSTBUILD => sub {
         },
     });
 
+    $self->controller->register('show errors', {
+        signature => [
+            "%s",
+            "%s LIKE '%%criteria%%'",
+        ],
+        code => sub {
+            my ($ctrl, $mode, $like_name) = @_;
+            die "Syntax error: unexpected $mode, expected LIKE" if $mode && uc $mode ne 'LIKE';
+
+            my @where_clauses = ();
+
+            if ($like_name) {
+                if (is_single_quoted($like_name)) {
+                    push @where_clauses, "name LIKE " . uc($like_name);
+                } else {
+                    die "Syntax error: expected LIKE to be followed by a single-quoted string";
+                }
+            }
+
+            my $where_clause = @where_clauses ? "AND " . join("\nAND ", @where_clauses) : "";
+            my $sql = qq{
+                SELECT
+                    attribute,
+                    owner,
+                    name,
+                    type,
+                    line,
+                    position,
+                    message_number,
+                    text
+                FROM
+                    all_errors
+                WHERE
+                    1 = 1
+                    $where_clause
+                ORDER BY
+                    sequence ASC
+            };
+
+            $self->do_and_display($sql, $ctrl->output);
+            return 1;
+        },
+    });
+
     $self->controller->register('show invalid', {
         signature => "%s [TABLE|VIEW|FUNCTION|PROCEDURE] [LIKE '%%criteria%%']",
         code => sub {
