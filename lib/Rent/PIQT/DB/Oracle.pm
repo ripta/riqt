@@ -18,7 +18,7 @@ sub _build_driver {
         $self->password,
         {
             'AutoCommit'  => 0,
-            'LongReadLen' => 8 * 1024,
+            'LongReadLen' => 1 * 1024 * 1024,
             'LongTruncOk' => 1,
             'RaiseError'  => 0,
             'PrintError'  => 0,
