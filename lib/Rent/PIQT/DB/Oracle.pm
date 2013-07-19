@@ -342,7 +342,7 @@ around POSTBUILD => sub {
             my $where_clause;
             if (@rest) {
                 if ($rest[0] =~ /^active$/i) {
-                    $where_clause = "WHERE s.status = 'ACTIVE'";
+                    $where_clause = "WHERE session_status = 'ACTIVE'";
                 } elsif ($rest[0] =~ /^where$/i) {
                     $where_clause = join(" ", @rest);
                 } else {
@@ -351,6 +351,9 @@ around POSTBUILD => sub {
             }
 
             my $sql = qq{
+            SELECT
+                *
+            FROM (
                 SELECT
                     s.sid || ',' || s.serial# || '\@' || s.inst_id AS session_id,
                     s.status AS session_status,
@@ -380,10 +383,11 @@ around POSTBUILD => sub {
                     LEFT JOIN dba_objects d ON (d.object_id = v.object_id)
                     LEFT JOIN gv\$session s ON (s.sid = v.session_id)
                     LEFT JOIN gv\$sql q ON (q.sql_id = s.sql_id)
-                $where_clause
-                ORDER BY
-                    l.ctime DESC,
-                    session_id
+            )
+            $where_clause
+            ORDER BY
+                lock_ctime DESC,
+                session_id
             };
 
             $ctrl->output->start_timing;
