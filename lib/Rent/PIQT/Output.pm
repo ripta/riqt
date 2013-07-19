@@ -193,6 +193,7 @@ sub errorfq {
 sub finish_timing {
     my ($self, $rows_affected) = @_;
     return unless $self->start_time;
+    return unless $self->controller->verbose;
 
     if (defined $rows_affected) {
         $self->okf("%d %s affected in %d ms",
