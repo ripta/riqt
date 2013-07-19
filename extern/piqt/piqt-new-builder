@@ -60,7 +60,7 @@ BEGIN {
 my $start = q!
 # Taken from App::FatPacker.
 BEGIN {
-my %fatpacked;
+our %fatpacked;
 !;
 
 my $end = q!

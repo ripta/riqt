@@ -47,13 +47,7 @@ GetOptions(
 pod2usage(1) if $help;
 
 # List all available drivers.
-# TODO: Make this work with FATPACKed PIQT.
 if ($list_drivers) {
-    if (defined $FATPACKED) {
-        print STDERR "--list-drivers does not currently work correctly for FATPACKED files\n";
-        exit 1;
-    }
-
     my $basefile = 'Rent/PIQT';
     my $replfile = $basefile . '/REPL.pm';
     my $replloc  = $INC{$replfile} || die "Cannot detect location of Rent::PIQT::REPL";
@@ -69,17 +63,29 @@ if ($list_drivers) {
         print STDERR "Supported $human_name drivers",
                 ($set_cmd ? " (can also be set using '$set_cmd')" : ""), ":\n";
 
-        opendir my $dh, $compdir;
-        while (readdir $dh) {
-            next if /^\./;
-            next unless /\.pm$/;
+        if (defined $FATPACKED) {
+            foreach (keys %::fatpacked) {
+                next unless s/^$compfile//;
 
-            s#/#::#g;
-            s#\.pm$##;
+                s#^/##;
+                s#/#::#g;
+                s#\.pm$##;
 
-            print STDERR "  $_\n";
+                print STDERR "  $_\n";
+            }
+        } else {
+            opendir my $dh, $compdir;
+            while (readdir $dh) {
+                next if /^\./;
+                next unless /\.pm$/;
+
+                s#/#::#g;
+                s#\.pm$##;
+
+                print STDERR "  $_\n";
+            }
+            closedir $dh;
         }
-        closedir $dh;
 
         print STDERR "\n";
     };
