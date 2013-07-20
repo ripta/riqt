@@ -437,6 +437,7 @@ around POSTBUILD => sub {
         code => sub {
             my ($ctrl, $object) = @_;
             my $o = $ctrl->output;
+            $o->start_timing;
 
             my $table = uc($object);
             my $owner = $table =~ s/(\w+)\.// ? $1 : undef;
@@ -489,6 +490,7 @@ around POSTBUILD => sub {
             ];
             $self->do_and_display($table_sql, $o);
 
+            my $inner_owner_clause = $owner ? "ic.table_owner = tc.owner" : "1 = 1";
             my $indexes_sql = qq[
                 SELECT
                     $select_owner
@@ -497,9 +499,24 @@ around POSTBUILD => sub {
                     status,
                     uniqueness,
                     tablespace_name,
-                    num_rows
+                    num_rows,
+                    (
+                        SELECT
+                            LISTAGG(
+                                ic.column_name || ' ' || ic.descend,
+                                ',\n'
+                            ) WITHIN GROUP (ORDER BY ic.column_position)
+                        FROM
+                            ${scope}_ind_columns ic,
+                            ${scope}_tab_columns tc
+                        WHERE
+                            ic.index_name = i.index_name
+                        AND $inner_owner_clause
+                        AND ic.table_name = tc.table_name
+                        AND ic.column_name = tc.column_name
+                    ) columns
                 FROM
-                    ${scope}_indexes
+                    ${scope}_indexes i
                 WHERE
                     table_name = '$table'
                 $owner_clause
@@ -508,130 +525,62 @@ around POSTBUILD => sub {
             ];
             $self->do_and_display($indexes_sql, $o);
 
-            # my $column_sql = qq{
-            #     SELECT
-            #         aic.column_name,
-            #         atc.data_default,
-            #         aic.descend
-            #     FROM
-            #         all_ind_columns aic,
-            #         all_tab_cols atc
-            #     WHERE
-            #         aic.index_name = ?
-            #     AND aic.table_owner = atc.owner
-            #     AND aic.table_name = atc.table_name
-            #     AND aic.column_name = atc.column_name
-            #     ORDER BY
-            #         aic.column_position
-            # };
-            # my $column_sub = sub {
-            #     my ($db, $row) = @_;
+            my $constraints_sql = qq[
+                SELECT
+                    ct.constraint_name,
+                    SUBSTR(
+                        DECODE(
+                            ct.constraint_type,
+                            'P', 'PRIMARY',
+                            'R', 'FOREIGN',
+                            'U', 'UNIQUE',
+                            'C', 'CHECK',
+                            ct.constraint_type
+                        ),
+                        1, 7
+                    ) constraint_type,
+                    ct.validated,
+                    ct.status,
+                    ct.deferred,
+                    ct.deferrable,
+                    (
+                        'REFERENCES ' ||
+                        (CASE ct.constraint_type
+                        WHEN 'P' THEN 'INDEX ' || ct.index_name
+                        WHEN 'R' THEN 'PRIMARY KEY OF ' || ct2.table_name || '.' || ct.r_constraint_name
+                        ELSE          'CONDITION (...)' -- || TO_LOB(ct.search_condition)
+                        END)
+                    ) extra
+                FROM
+                    ${scope}_constraints ct
+                LEFT JOIN ${scope}_constraints ct2
+                    ON ct.r_constraint_name = ct2.constraint_name
+                WHERE
+                    ct.table_name = '$table'
+                ORDER BY
+                    DECODE(ct.constraint_type, 'P', 1, 'R', 2, 'U', 3, 'C', 4, 5),
+                    ct.constraint_name
+            ];
+            $self->do_and_display($constraints_sql, $o);
 
-            #     $sth->execute($row->[0]);
-            #     print "             COLUMNS: ", lc join(', ', map { ($_->[0] =~ /\$$/ ? $_->[1] : $_->[0]) . " $_->[2]" } @{$sth->fetchall_arrayref}), "\n";
-            # };
+            my $triggers_sql = qq[
+                SELECT
+                    trigger_name,
+                    trigger_type,
+                    triggering_event,
+                    status,
+                    action_type,
+                    trigger_body
+                FROM
+                    ${scope}_triggers
+                WHERE
+                    table_name = '$table'
+                ORDER BY
+                    trigger_name
+            ];
+            $self->do_and_display($triggers_sql, $o);
 
-            # print "INDEXES:\n\n";
-            # $self->display_function(\&DatabaseManager::_format_data_mysql);
-            # $self->process_query(qq{
-            #     SELECT
-            #         index_name,
-            #         index_type,
-            #         status,
-            #         uniqueness "unique",
-            #         tablespace_name,
-            #         num_rows
-            #     FROM
-            #         all_indexes
-            #     WHERE
-            #         table_name = '$table'
-            #     ORDER BY
-            #         index_name
-            # }, {
-            #     POST_REC => $column_sub
-            # });
-            # print "\n";
-
-            # $sth = $self->connection->prepare_cached(q{
-            #     SELECT /* PIQT::table_status::indexes */
-            #         ct.constraint_type,
-            #         ct.index_name,
-            #         ct.r_constraint_name,
-            #         ct.search_condition,
-            #         ct2.table_name fk_table
-            #     FROM
-            #         all_constraints ct
-            #     LEFT JOIN all_constraints ct2 ON ct.r_constraint_name = ct2.constraint_name
-            #     WHERE ct.constraint_name = ?
-            # });
-            # $column_sub = sub {
-            #     my ($db, $row) = @_;
-
-            #     $sth->execute($row->[0]);
-            #     my ($type, $index, $ref, $sc, $fktbl) = $sth->fetchrow_array;
-            #     print "             REFERENCES ",
-            #           $type eq 'P' ? "INDEX     : $index"
-            #         : $type eq 'R' ? "PK        : of $fktbl ($ref)"
-            #         :                "CONDITION : $sc", "\n";
-            #     $sth->finish;
-            # };
-
-            # print "CONSTRAINTS:\n\n";
-            # $self->process_query(qq{
-            # SELECT /* PIQT::table_status::constraints */
-            #     ct.constraint_name,
-            #     SUBSTR(
-            #         DECODE(ct.constraint_type,
-            #                 'P', 'Primary Key',
-            #                 'R', 'Foreign Key',
-            #                 'U', 'Unique',
-            #                 'C', 'Check',
-            #                      'Other'
-            #         ),
-            #     1, 11) as "type",
-            #     ct.validated,
-            #     ct.status,
-            #     ct.deferred,
-            #     ct.deferrable
-            # FROM
-            #     all_constraints ct
-            # WHERE
-            #     ct.table_name = '$table'
-            # ORDER BY
-            #     DECODE(ct.constraint_type,
-            #             'P', 1,
-            #             'R', 2,
-            #             'U', 3,
-            #             'C', 4,
-            #             5
-            #     ),
-            #     ct.constraint_name
-            # }, {
-            #     POST_REC => $column_sub
-            # });
-            # print "\n";
-
-            # $column_sub = sub {
-            # };
-
-            # print "TRIGGERS:\n\n";
-            # $self->process_query(qq{
-            # SELECT /* PIQT::table_status::triggers */
-            #     tg.trigger_name,
-            #     tg.trigger_type || ', ' || tg.triggering_event as "trigger_type",
-            #     tg.status,
-            #     tg.action_type
-            # FROM
-            #     all_triggers tg
-            # WHERE
-            #     tg.table_name = '$table'
-            # ORDER BY
-            #     trigger_name
-            # }, {
-            #     POST_REC => $column_sub
-            # });
-
-            # $self->display_function($prev_dispfunc);
+            $o->finish_timing(0);
             return 1;
         }
     });
