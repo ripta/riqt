@@ -703,10 +703,14 @@ sub process {
         $self->run_file($1);
         return 3;
     } elsif ($line eq '/') {
-        if ($self->db->last_query) {
+        if ($$buffer) {
+            $self->output->debugf("Executing query from staging buffer.");
+        } elsif ($self->db->last_query) {
             $$buffer = "" . $self->db->last_query;
+            $self->output->debugf("Re-executing contents of execution buffer.");
         } else {
-            $self->output->error('Execution buffer is empty. Please specify a query or PL/SQL block to execute.');
+            $self->output->error('Staging and execution buffers are empty. ' .
+                'Please specify a query or PL/SQL block to execute.');
             return 2;
         }
     } else {
