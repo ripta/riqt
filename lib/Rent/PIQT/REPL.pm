@@ -83,6 +83,7 @@ sub _search_under {
         join('', map { ucfirst lc $_ } split(/(?<=[A-Za-z])_(?=[A-Za-z])|\b/, $klass)),
     );
 
+    # Perform the actual searching
     my ($success, $error);
     local $Carp::CarpLevel = $Carp::CarpLevel + 2;
     foreach my $klass_name (@permutations) {
@@ -95,6 +96,7 @@ sub _search_under {
         Carp::croak($error) if $error && $error !~ m/^Can't locate $klass_file/;
     }
 
+    # Die with a useful error message, with a list of permutations tested
     Carp::croak("Cannot find '" . $klass . "' under '" . $base . "'; tried: " . join(', ', @permutations));
 }
 
@@ -115,7 +117,7 @@ has 'cache' => (
 );
 
 # Reference to configuration container. Each configuration implementation takes
-# its own set of arguments. If a configuration is instantiation by:
+# its own set of arguments. If a configuration is instantiated by:
 #
 #   Rent::PIQT::Config::Example->new('abc', 'def');
 #

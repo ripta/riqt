@@ -5,6 +5,8 @@ use List::Util qw/max/;
 use Moo;
 use String::Escape qw/singlequote/;
 
+our $VERSION = '0.1.0';
+
 with "Rent::PIQT::DB";
 
 # Lazily connect to the driver. This also disables auto-commits, and some

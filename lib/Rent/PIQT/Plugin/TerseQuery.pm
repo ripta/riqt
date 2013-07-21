@@ -53,6 +53,10 @@ sub BUILD {
             The <projections> portion is optional, and must be marked with curly braces:
 
                 ` (prop*) {property_id, name}
+
+            Projections may be renamed:
+
+                ` (prop*) {prop* -> pid, name}
         /,
         code => sub {
             my ($ctrl, $args) = @_;
