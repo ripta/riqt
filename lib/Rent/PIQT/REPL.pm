@@ -882,13 +882,11 @@ sub run_file {
     $file =~ s/;$//;
     unless (-e $file) {
         $self->output->errorf("Cannot load file %s: file does not exist", quote($file));
-        $self->output->println;
         return 0;
     }
 
     open my $fh, $file or do {
         $self->output->errorf("Cannot open file %s: %s", quote($file), $!);
-        $self->output->println;
         return 0;
     };
 
@@ -905,12 +903,9 @@ sub run_file {
         if ($@) {
             $self->output->errorf("Process died at %s line %d", $file, $lineno);
             $self->output->errorf("    %s", $self->sanitize_death($@));
-            $self->output->println;
             close $fh;
             return;
         }
-
-        $self->output->println;
     }
 
     $self->_verify_buffer($buffer);
