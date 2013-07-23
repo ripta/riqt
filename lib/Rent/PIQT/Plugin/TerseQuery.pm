@@ -57,7 +57,28 @@ sub BUILD {
             Projections may be renamed:
 
                 ` (prop*) {prop* -> pid, name}
+
+            Aggregate functions in the projection automatically cause a summarization:
+
+                ` (properties) {businessmodel_tp}#count
+
+            which is equivalent to:
+
+                SELECT businessmodel_tp, COUNT(*)
+                FROM properties GROUP BY businessmodel_tp;
+
+            Joins can be specified as in other terse queries:
+
+                ` (prop* x phone*) [business* IN ('cpa', 'plt')] {business*}#count
+
+            which is equivalent to:
+
+                SELECT businessmodel_tp, COUNT(*)
+                FROM properties JOIN phones USING (property_id)
+                WHERE businessmodel_tp IN ('cpa', 'plt')
+                GROUP BY businessmodel_tp;
         /,
+        slurp => 1,
         code => sub {
             my ($ctrl, $args) = @_;
             my $o = $ctrl->output;
