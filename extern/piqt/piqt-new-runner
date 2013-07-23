@@ -286,4 +286,8 @@ Other options:
 
 =head1 AUTHOR
 
-Ripta Pasay <rpasay@rent.com>
+This rewrite brought to you by Ripta Pasay <rpasay@rent.com>.
+
+Based on work by Mark Bracher <from-piqt@brachers.org>, incorporating extensive
+modifications by Buddy Burden <bburden@rent.com>, and some changes by Ripta
+Pasay <rpasay@rent.com> and Kate Yoak <kyoak@rent.com>.
