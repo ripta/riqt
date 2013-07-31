@@ -341,7 +341,7 @@ around POSTBUILD => sub {
         code => sub {
             my ($ctrl, @rest) = @_;
 
-            my $where_clause;
+            my $where_clause = '';
             if (@rest) {
                 if ($rest[0] =~ /^active$/i) {
                     $where_clause = "WHERE session_status = 'ACTIVE'";
