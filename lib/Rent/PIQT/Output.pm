@@ -194,6 +194,7 @@ sub finish_timing {
     my ($self, $rows_affected) = @_;
     return unless $self->start_time;
     return unless $self->controller->verbose;
+    return unless $self->controller->config->timing;
 
     if (defined $rows_affected) {
         $self->okf("%d %s affected in %d ms",
