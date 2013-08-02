@@ -578,19 +578,30 @@ sub BUILD {
 
 # Execute an internal command.
 sub execute {
-    my ($self, $command) = @_;
-    $command =~ s/;$//;
-    $command =~ s/^\s+|\s+$//g;
+    my ($self, $raw_command) = @_;
     return unless $self->_commands;
 
+    # Preprocess the raw command by removing the trailing semicolon and
+    # trimming any leading and trailing whitespace
+    my $command = $raw_command;
+    my $has_semicolon = ($command =~ s/;$//);
+    $command =~ s/^\s+|\s+$//g;
+
+    # Commands that are longer should take precedence over commands that are
+    # shorter, e.g., SHOW COMMANDS should try 'SHOW COMMANDS' before 'SHOW'
+    # with the argument 'COMMANDS'
     my @commands = sort { length($b) <=> length($a) || $a cmp $b } keys %{ $self->_commands };
     my @matches = grep { $command =~ /^\Q$_\E(?:\b|\s+\S+.*|)$/i } @commands;
 
+    # If at least one match was found, we're guaranteed that the most-specific
+    # match will be the first match
     if (scalar(@matches)) {
         $self->output->debugf("Execute internal command:");
-        $self->output->debugf("    Sort-cand: %s", join(", ", @commands));
+        $self->output->debugf("    Sort-cand: %s items", scalar(@commands));
         $self->output->debugf("    Matches  : %s", join(", ", @matches));
 
+        # Strip the command name from the beginning of the user input, leaving
+        # us a string of all the arguments
         my $command_name = $matches[0];
         my $args = $command;
         $args =~ s/^\Q$command_name\E//i;
@@ -599,9 +610,12 @@ sub execute {
         $self->output->debugf("    Execute  : %s(%s)", $command_name, $args ? quote(printable($args)) : '');
 
         if ($self->_commands->{$command_name}->{'slurp'}) {
+            # In slurp mode, the command requested the entire argument passed
+            # as a single string
             $self->output->debugf("    Slurp    : YES");
-            return $self->_commands->{$command_name}->{'code'}->($self, $args);
+            return $self->_commands->{$command_name}->{'code'}->($self, $args, $has_semicolon);
         } else {
+            # Normally, arguments should be pre-parsed into an array of arguments
             my @args = argstring_to_array($args);
 
             $self->output->debugf("    ArgArray :");
@@ -610,11 +624,19 @@ sub execute {
             }
             return $self->_commands->{$command_name}->{'code'}->($self, @args);
         }
+    } else {
+        if (length($raw_command) > 35) {
+            $self->output->debugf("No internal command match: %s...", substr($raw_command, 0, 35));
+        } else {
+            $self->output->debugf("No internal command match: %s", $raw_command);
+        }
     }
 
     return 0;
 }
 
+# Retrieve a flattened list of all internal commands that have been registered
+# so far. Internal commands are sorted alphanumerically.
 sub internal_commands {
     my ($self) = @_;
     return () unless $self->_commands;
@@ -719,28 +741,34 @@ sub process {
 
         # Skip any blank lines
         if ($$buffer =~ /^\s*$/s) {
+            $self->output->debugf("      Skip blank line");
             $$buffer = '';
             return 1;
         }
 
         # Skip any internal commands correctly handled
         if (eval { $self->execute($$buffer) }) {
+            $self->output->debugf("      Handled by internal command");
             $$buffer = '';
             return 3;
         }
 
         # Bail out and clear the buffer if the internal command failed
         if ($@) {
+            $self->output->debugf("      Skip internal command death");
             $$buffer = '';
             die $@;
         }
 
         # Display a continuation prompt if the query isn't already complete
         unless ($self->db->query_is_complete($$buffer)) {
+            $self->output->debugf("      Skip driver doesn't think query-is-complete");
             $$buffer .= "\n";
             return 0;
         }
     }
+
+    $self->output->debugf("      Continue process buffer");
 
     # Sanitize the query as necesary
     $$buffer = $self->db->sanitize($$buffer);
