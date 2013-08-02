@@ -591,7 +591,7 @@ sub execute {
     # shorter, e.g., SHOW COMMANDS should try 'SHOW COMMANDS' before 'SHOW'
     # with the argument 'COMMANDS'
     my @commands = sort { length($b) <=> length($a) || $a cmp $b } keys %{ $self->_commands };
-    my @matches = grep { $command =~ /^\Q$_\E(?:\b|\s+\S+.*|)$/i } @commands;
+    my @matches = grep { $command =~ /^\Q$_\E(?:\b|\s+\S+.*|)/i } @commands;
 
     # If at least one match was found, we're guaranteed that the most-specific
     # match will be the first match
