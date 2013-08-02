@@ -91,10 +91,18 @@ around POSTBUILD => sub {
 
                 EXPLAIN SELECT * FROM test;
         },
+        slurp => 1,
         code => sub {
-            my ($ctrl, @rest) = @_;
-            my $query = join ' ', @rest;
+            my ($ctrl, $query, $has_ended) = @_;
             my $rows;
+
+            unless ($has_ended) {
+                $ctrl->output->debugf(
+                    "Deferring EXPLAIN PLAN until the full query is received. %s bytes in buffer so far.",
+                    length($query),
+                );
+                return 0;
+            }
 
             my $stmt_id = sprintf('%s:%02d%04d', $ENV{'USER'}, $$ % 100, time % 10000);
             $ctrl->output->info("Statement will be planned as $stmt_id");
