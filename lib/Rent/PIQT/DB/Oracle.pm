@@ -105,6 +105,7 @@ around POSTBUILD => sub {
             }
 
             my $stmt_id = sprintf('%s:%02d%04d', $ENV{'USER'}, $$ % 100, time % 10000);
+            $ctrl->output->println;
             $ctrl->output->info("Statement will be planned as $stmt_id");
 
             $rows = $self->driver->do(qq{DELETE FROM plan_table WHERE statement_id = '$stmt_id'});
