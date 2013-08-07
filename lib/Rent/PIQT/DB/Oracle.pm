@@ -416,7 +416,10 @@ around POSTBUILD => sub {
     });
 
     $self->controller->register('kill', {
-        signature => '%s <sid>',
+        signature => [
+            '%s <sid>',
+            '%s ACTIVE',
+        ],
         help => q{
             Kill an Oracle session. The <sid> must be a string in the form of a session ID
             and session serial#. For example:
@@ -426,11 +429,42 @@ around POSTBUILD => sub {
         code => sub {
             my ($ctrl, $sid, @rest) = @_;
             die "Syntax error: too many arguments: @rest" if @rest;
+            die "Expected <sid> or ACTIVE" unless $sid;
 
-            my $sql = sprintf("ALTER SYSTEM KILL SESSION %s",
-                singlequote(unquote_or_die($sid)),
-            );
-            $self->do_and_display($sql, $ctrl->output);
+            my $o = $ctrl->output;
+
+            if (lc $sid eq 'active') {
+                my $sql = qq{
+                SELECT
+                    session_id
+                FROM (
+                    $LOCKVIEW_SQL
+                )
+                WHERE
+                    session_status = 'ACTIVE'
+                };
+
+                $self->do($sql);
+                while (my ($sid) = $self->fetch_array) {
+                    my $kill_sql = sprintf("ALTER SYSTEM KILL SESSION %s",
+                        singlequote($sid),
+                    );
+                    if ($self->do($kill_sql)) {
+                        $o->infof("Killed session %s", $sid);
+                    } else {
+                        $o->errorf("Could not kill session %s: %s",
+                            $sid,
+                            $self->last_error,
+                        );
+                    }
+                }
+            } else {
+                my $sql = sprintf("ALTER SYSTEM KILL SESSION %s",
+                    singlequote(unquote_or_die($sid)),
+                );
+                $self->do_and_display($sql, $o);
+            }
+
             return 1;
         },
     });
