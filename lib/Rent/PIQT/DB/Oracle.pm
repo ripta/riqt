@@ -388,7 +388,9 @@ around POSTBUILD => sub {
                         6, 'Exclusive',
                         'Other: ' || TO_CHAR(v.locked_mode)
                     ) AS lock_mode,
-                    q.sql_text AS sql
+                    q.sql_text AS sql,
+                    q.elapsed_time AS elapsed_time,
+                    q.rows_processed AS rows_processed
                 FROM gv\$locked_object v
                     JOIN gv\$lock l ON (l.id1 = v.object_id)
                     LEFT JOIN dba_objects d ON (d.object_id = v.object_id)
@@ -397,6 +399,7 @@ around POSTBUILD => sub {
             )
             $where_clause
             ORDER BY
+                elapsed_time DESC,
                 lock_ctime DESC,
                 session_id
             };
