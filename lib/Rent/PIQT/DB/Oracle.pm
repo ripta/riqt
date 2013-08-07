@@ -7,6 +7,40 @@ use String::Escape qw/singlequote/;
 
 our $VERSION = '0.1.0';
 
+our $LOCKVIEW_SQL = qq{
+    SELECT
+        s.sid || ',' || s.serial# || '\@' || s.inst_id AS session_id,
+        s.status AS session_status,
+        s.machine AS session_machine,
+        s.program AS session_program,
+        s.type AS session_type,
+        s.schemaname AS session_schemaname,
+        s.osuser AS session_osuser,
+        d.owner || '.' || d.object_name AS dba_object,
+        d.object_type AS dba_object_type,
+        DECODE(l.block, 0, 'Not Blocking', 1, 'Blocking', 2, 'Global') AS lock_block,
+        l.ctime AS lock_ctime,
+        DECODE(
+            v.locked_mode,
+            0, 'None',
+            1, 'Null',
+            2, 'Row-Share (Conc. Read)',
+            3, 'Row-Exclusive (Conc. Write)',
+            4, 'Share (Prot. Read)',
+            5, 'Share Row-X (Prot. Write)',
+            6, 'Exclusive',
+            'Other: ' || TO_CHAR(v.locked_mode)
+        ) AS lock_mode,
+        q.sql_text AS sql,
+        q.elapsed_time AS elapsed_time,
+        q.rows_processed AS rows_processed
+    FROM gv\$locked_object v
+        JOIN gv\$lock l ON (l.id1 = v.object_id)
+        LEFT JOIN dba_objects d ON (d.object_id = v.object_id)
+        LEFT JOIN gv\$session s ON (s.sid = v.session_id)
+        LEFT JOIN gv\$sql q ON (q.sql_id = s.sql_id)
+};
+
 with "Rent::PIQT::DB";
 
 # Lazily connect to the driver. This also disables auto-commits, and some
@@ -365,37 +399,7 @@ around POSTBUILD => sub {
             SELECT
                 *
             FROM (
-                SELECT
-                    s.sid || ',' || s.serial# || '\@' || s.inst_id AS session_id,
-                    s.status AS session_status,
-                    s.machine AS session_machine,
-                    s.program AS session_program,
-                    s.type AS session_type,
-                    s.schemaname AS session_schemaname,
-                    s.osuser AS session_osuser,
-                    d.owner || '.' || d.object_name AS dba_object,
-                    d.object_type AS dba_object_type,
-                    DECODE(l.block, 0, 'Not Blocking', 1, 'Blocking', 2, 'Global') AS lock_block,
-                    l.ctime AS lock_ctime,
-                    DECODE(
-                        v.locked_mode,
-                        0, 'None',
-                        1, 'Null',
-                        2, 'Row-Share (Conc. Read)',
-                        3, 'Row-Exclusive (Conc. Write)',
-                        4, 'Share (Prot. Read)',
-                        5, 'Share Row-X (Prot. Write)',
-                        6, 'Exclusive',
-                        'Other: ' || TO_CHAR(v.locked_mode)
-                    ) AS lock_mode,
-                    q.sql_text AS sql,
-                    q.elapsed_time AS elapsed_time,
-                    q.rows_processed AS rows_processed
-                FROM gv\$locked_object v
-                    JOIN gv\$lock l ON (l.id1 = v.object_id)
-                    LEFT JOIN dba_objects d ON (d.object_id = v.object_id)
-                    LEFT JOIN gv\$session s ON (s.sid = v.session_id)
-                    LEFT JOIN gv\$sql q ON (q.sql_id = s.sql_id)
+                $LOCKVIEW_SQL
             )
             $where_clause
             ORDER BY
