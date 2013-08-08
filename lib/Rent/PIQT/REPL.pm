@@ -67,19 +67,19 @@ sub _search_under {
     } map {
         $base . '::' . $_
     } (
-        # as-is:
+        # as-is: KLASS_name
         $klass,
-        # uppercased first, but don't normalize
+        # uppercased first, but don't normalize: KLASS_name
         ucfirst($klass),
-        # camelcase, but don't normalize
+        # camelcase, but don't normalize: KLASSName
         join('', map { ucfirst $_ } split(/(?<=[A-Za-z])_(?=[A-Za-z])|\b/, $klass)),
-        # uppercase everything
+        # uppercase everything: KLASS_NAME
         uc($klass),
-        # lowercase everything
+        # lowercase everything: klass_name
         lc($klass),
-        # uppercase first, with normalization
+        # uppercase first, with normalization: Klass_name
         ucfirst(lc($klass)),
-        # camelcase, with normalization
+        # camelcase, with normalization: KlassName
         join('', map { ucfirst lc $_ } split(/(?<=[A-Za-z])_(?=[A-Za-z])|\b/, $klass)),
     );
 
