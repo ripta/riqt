@@ -3,6 +3,8 @@ package Rent::PIQT::Plugin::EditQuery;
 use File::Temp qw/tempfile/;
 use Moo;
 
+our $VERSION = '0.5.0';
+
 with 'Rent::PIQT::Plugin';
 
 sub BUILD {

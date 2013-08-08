@@ -486,21 +486,20 @@ sub BUILD {
                 [
                     {name => "Name",        type => "str", length => 255},
                     {name => "Class",       type => "str", length => 255},
-                    {name => "Instance",    type => "str", length => 255},
+                    {name => "Version",     type => "str", length => 255},
                     {name => "Created At",  type => "int", length => 20},
                 ]
             );
 
+            no strict 'refs';
             foreach my $klass (sort keys %{$self->{'plugins'}}) {
                 my $name = $klass;
                 $name =~ s/.*:://;
 
-                my $instance = $self->{'plugins'}->{$klass}->{'instance'};
-                $instance =~ s/.*=//;
-
+                my $version = ${ $klass . '::VERSION' };
                 my $created_at = $self->{'plugins'}->{$klass}->{'created_at'};
 
-                $o->record([$name, $klass, $instance, $created_at * 1000]);
+                $o->record([$name, $klass, $version, $created_at * 1000]);
             }
 
             $o->finish;

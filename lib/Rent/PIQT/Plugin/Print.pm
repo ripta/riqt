@@ -2,6 +2,8 @@ package Rent::PIQT::Plugin::Print;
 
 use Moo;
 
+our $VERSION = '0.5.0';
+
 with 'Rent::PIQT::Plugin';
 
 sub BUILD {

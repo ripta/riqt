@@ -3,6 +3,8 @@ package Rent::PIQT::Plugin::SqlPlusCompatibility;
 use Moo;
 use Rent::PIQT::Util;
 
+our $VERSION = '0.5.0';
+
 with 'Rent::PIQT::Plugin';
 
 our $REGISTERED = {

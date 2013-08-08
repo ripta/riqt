@@ -4,6 +4,8 @@ use List::Util qw/max/;
 use Moo;
 use Rent::PIQT::Util;
 
+our $VERSION = '0.5.0';
+
 with 'Rent::PIQT::Plugin';
 
 sub BUILD {
