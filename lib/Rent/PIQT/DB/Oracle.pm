@@ -362,10 +362,12 @@ around POSTBUILD => sub {
         },
     });
 
-    $self->controller->register('show locks', {
+    $self->controller->register('show lock', 'show locks', {
         signature => [
             '%s',
             '%s ACTIVE',
+            '%s STATS',
+            '%s STATISTICS',
             '%s WHERE <where_clause>',
         ],
         help => q{
@@ -384,33 +386,94 @@ around POSTBUILD => sub {
         code => sub {
             my ($ctrl, @rest) = @_;
 
-            my $where_clause = '';
+            my $o               = $ctrl->output;
+            my $stats           = 0;
+            my $where_clause    = '';
+
             if (@rest) {
-                if ($rest[0] =~ /^active$/i) {
+                if ($rest[0] =~ /^stats|statistics$/i) {
+                    $stats = 1;
+                } elsif ($rest[0] =~ /^active$/i) {
                     $where_clause = "WHERE session_status = 'ACTIVE'";
                 } elsif ($rest[0] =~ /^where$/i) {
                     $where_clause = join(" ", @rest);
                 } else {
-                    die "Syntax error: unexpected " . $rest[0] . ", expected ACTIVE or WHERE";
+                    die "Syntax error: unexpected " . $rest[0] . ", expected ACTIVE, STATS, STATISTICS, or WHERE";
                 }
             }
 
-            my $sql = qq{
-            SELECT
-                *
-            FROM (
-                $LOCKVIEW_SQL
-            )
-            $where_clause
-            ORDER BY
-                elapsed_time DESC,
-                lock_ctime DESC,
-                session_id
-            };
+            if ($stats) {
+                my $sql = qq{
+                SELECT
+                    session_id,
+                    session_status,
+                    session_machine,
+                    session_type,
+                    session_schemaname,
+                    session_osuser,
+                    dba_object,
+                    lock_block,
+                    lock_ctime,
+                    lock_mode
+                FROM (
+                    $LOCKVIEW_SQL
+                )
+                $where_clause
+                ORDER BY
+                    elapsed_time DESC,
+                    lock_ctime DESC,
+                    session_id
+                };
 
-            $ctrl->output->start_timing;
-            my $row_num = $self->do_and_display($sql, $ctrl->output);
-            $ctrl->output->finish_timing($row_num);
+                if ($self->do($sql)) {
+                    my $aggregate = { };
+                    while (my $row = $self->fetch_hash) {
+                        foreach my $col (sort keys %$row) {
+                            next if $col eq 'LOCK_CTIME';
+                            $aggregate->{$col} ||= { };
+                            $aggregate->{$col}->{ $row->{$col} } ||= 0;
+                            $aggregate->{$col}->{ $row->{$col} }++;
+                        }
+                    }
+
+                    foreach my $col (sort keys %$aggregate) {
+                        my $stats = $aggregate->{$col};
+                        $o->printlnf("Column %s", $col);
+
+                        my @sorted_cols = sort {
+                            $col eq 'LOCK_CTIME'
+                                ? $b <=> $a
+                                : $stats->{$b} <=> $stats->{$a} || $a cmp $b
+                        } keys %$stats;
+
+                        foreach my $val (@sorted_cols) {
+                            $o->printlnf("  | %-35s | %-10d |", $val, $stats->{$val});
+                        }
+
+                        $o->println;
+                    }
+                } else {
+                    $o->errorf($self->last_error);
+                }
+            } else {
+                my $sql = qq{
+                SELECT
+                    *
+                FROM (
+                    $LOCKVIEW_SQL
+                )
+                $where_clause
+                ORDER BY
+                    elapsed_time DESC,
+                    lock_ctime DESC,
+                    session_id
+                };
+
+                $o->start_timing;
+                my $row_num = $self->do_and_display($sql, $o);
+                $o->finish_timing($row_num);
+            }
+
             return 1;
         },
     });
