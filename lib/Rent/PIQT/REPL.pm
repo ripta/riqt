@@ -307,6 +307,13 @@ sub BUILD {
         }
     }
 
+    # Version information injection
+    $self->config->version($VERSION);
+    $self->config->register('version',
+        persist => 0,
+        write   => 0,
+    );
+
     $self->output->debugf("%s is ready", $self);
     $self->{'is_ready'} = 1;
 
