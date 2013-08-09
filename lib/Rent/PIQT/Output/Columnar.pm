@@ -25,7 +25,13 @@ sub start {
     my ($self, $fields) = @_;
     $self->fields($fields);
 
-    my @headings = map { ($_->{'name'}, $self->sep) } @$fields;
+    my @headings = map {
+        my $col_spec = {
+            title   => $_->{'name'},
+            align   => 'left',
+        };
+        ($col_spec, $self->sep)
+    } @$fields;
     pop @headings if @headings;
 
     $self->record_number(0);
