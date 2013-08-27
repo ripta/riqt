@@ -10,7 +10,7 @@ with 'Rent::PIQT::Plugin';
 sub BUILD {
     my ($self) = @_;
 
-    $self->controller->register('\e', {
+    $self->controller->register('\e', 'ed', 'vi', {
         signature => [
             '%s',
             '%s <filename>',
