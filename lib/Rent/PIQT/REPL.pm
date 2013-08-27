@@ -331,7 +331,7 @@ sub BUILD {
     );
 
     # Handle internal help command
-    $self->register('help', {
+    $self->register('help', '\?', {
         signature => ['%s', '%s <command>'],
         help => q{
             This is the meta help for the help command.
@@ -398,6 +398,19 @@ sub BUILD {
             $o->info;
             $o->info($o->colorize("NAME", "bold white"));
             $o->info($o->reindent($args, 1));
+
+            # Show aliases if any are defined
+            if (ref $cmd_info->{'aliases'} eq 'ARRAY') {
+                if (my @aliases = @{ $cmd_info->{'aliases'} }) {
+                    if (@aliases > 1) {
+                        $o->info;
+                        $o->info($o->colorize("ALIASES", "bold white"));
+                        foreach (@aliases) {
+                            $o->info($o->reindent(uc $_, 1));
+                        }
+                    }
+                }
+            }
 
             # Print out command usage synopsis / syntax
             $o->info;
@@ -881,6 +894,7 @@ sub register {
     foreach (@args) {
         $self->output->debugf("Registering internal command %s => %s", quote($_), $code);
         $self->_commands->{uc($_)} = {
+            aliases         => [ @args ],
             code            => $code,
             caller_package  => $c_pkg,
             caller_file     => $c_file,
