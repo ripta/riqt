@@ -70,10 +70,14 @@ sub BUILD {
                 $query = <$fh>;
                 close $fh;
 
-                if ($query && $query ne $placeholder) {
-                    $ctrl->run_query($query);
+                if ($query) {
+                    if ($query ne $placeholder) {
+                        $o->warnf("Query placeholder was not overwritten.");
+                    } else {
+                        $ctrl->run_query($query);
+                    }
                 } else {
-                    $o->infof("No query to run.");
+                    $o->warnf("No query to run.");
                 }
             }
 
