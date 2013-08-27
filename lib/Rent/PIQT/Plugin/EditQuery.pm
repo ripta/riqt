@@ -43,10 +43,17 @@ sub BUILD {
             if ($filename) {
                 system("$editor $filename");
                 $ctrl->run_file($filename);
-            } elsif (my $query = $ctrl->db->last_query) {
+            } else {
+                my $placeholder = "-- No previous query to edit. Replace this with your query.\n";
+                my $query = $ctrl->db->last_query;
+                if ($query) {
+                    $query .= ';' unless $query =~ /;$/;
+                } else {
+                    $query = $placeholder;
+                }
+
                 my ($fh, $fname) = tempfile();
                 print $fh $query;
-                print $fh ';' unless $query =~ /;$/;
                 close $fh;
 
                 system("$editor $fname");
@@ -63,9 +70,11 @@ sub BUILD {
                 $query = <$fh>;
                 close $fh;
 
-                $ctrl->run_query($query) if $query;
-            } else {
-                $o->error("There is no previous query to edit.");
+                if ($query && $query ne $placeholder) {
+                    $ctrl->run_query($query);
+                } else {
+                    $o->infof("No query to run.");
+                }
             }
 
             return 1;
