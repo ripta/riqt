@@ -10,7 +10,7 @@ use String::Escape qw/quote printable/;
 use Term::ReadLine;
 use Time::HiRes qw/gettimeofday tv_interval/;
 
-our $VERSION = '0.5.11';
+our $VERSION = '0.5.12';
 
 # Generate the 'isa' clause for some 'has' below. Given a C<$name>, this sub
 # generates an anonymous subroutine that in turn expects one argument that is
@@ -343,6 +343,8 @@ sub BUILD {
                 SHOW                Show a list of all configuration variables
                 SHOW COMMANDS       Show a list of all commands
                 QUIT                Quit PIQT
+                \Q                  Quit PIQT, too
+                ED                  Edit the last SQL query in your favorite editor
 
             If <command> contains whitespace, it should be single-quoted, for example,
             these two commands work the same:
