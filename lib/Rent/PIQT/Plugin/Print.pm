@@ -6,14 +6,36 @@ our $VERSION = '0.5.0';
 
 with 'Rent::PIQT::Plugin';
 
+our $TOKENS = {
+    'date'      => sub {
+        return scalar localtime();
+    },
+};
+
 sub BUILD {
     my ($self) = @_;
 
     $self->controller->register('print', {
-        slurp => 1,
         code => sub {
-            my ($ctrl, $args) = @_;
-            $ctrl->output->println(unquote_or_die($args));
+            my ($ctrl, @args) = @_;
+            my $line = "";
+            foreach (@args) {
+                if (is_quoted($_)) {
+                    $line .= unquote($_);
+                } else {
+                    my ($token, $inner) = ($_ =~ /([^\(]+)(?:\((.*)\))?/);
+                    if ($token) {
+                        if (exists $TOKENS->{$token}) {
+                            $line .= $TOKENS->{$token}->($inner);
+                        } else {
+                            die "Evaluation error: unknown token '$token'";
+                        }
+                    } else {
+                        die "Parse error: $_\n             ^";
+                    }
+                }
+            }
+            $ctrl->output->println($line);
             return 1;
         },
     });
