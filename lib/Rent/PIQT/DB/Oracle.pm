@@ -609,12 +609,12 @@ around POSTBUILD => sub {
             my $indexes_sql = qq[
                 SELECT
                     $select_owner
-                    index_name,
-                    index_type,
-                    status,
-                    uniqueness,
-                    tablespace_name,
-                    num_rows,
+                    i.index_name,
+                    i.index_type,
+                    i.status,
+                    i.uniqueness,
+                    i.tablespace_name,
+                    i.num_rows,
                     (
                         SELECT
                             LISTAGG(
@@ -629,11 +629,13 @@ around POSTBUILD => sub {
                         AND $inner_owner_clause
                         AND ic.table_name = tc.table_name
                         AND ic.column_name = tc.column_name
-                    ) columns
+                    ) columns,
+                    column_expression expression
                 FROM
                     ${scope}_indexes i
+                LEFT JOIN ${scope}_ind_expressions ie ON ie.index_name = i.index_name
                 WHERE
-                    table_name = '$table'
+                    i.table_name = '$table'
                 $owner_clause
                 ORDER BY
                     index_name
