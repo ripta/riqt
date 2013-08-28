@@ -6,7 +6,6 @@ use String::Escape qw/
     singlequote
     unbackslash
     unsinglequote
-    unquote
 /;
 use Text::ParseWords;
 
@@ -21,6 +20,7 @@ our @EXPORT = qw/
     argstring_to_array
     indent_lines
     is_double_quoted
+    is_quoted
     is_regexp_string
     is_single_quoted
     like_to_regexp
@@ -28,7 +28,10 @@ our @EXPORT = qw/
     pluralize
     rstring_to_regexp
     strip_spaces
+    undouble_quote
+    unquote
     unquote_or_die
+    unsingle_quote
 /;
 our @EXPORT_OK = ();
 
@@ -47,6 +50,11 @@ sub indent_lines {
 sub is_double_quoted {
     my ($str) = @_;
     return $str =~ /^".*"$/;
+}
+
+sub is_quoted {
+    my ($str) = @_;
+    return is_double_quoted($str) || is_single_quoted($str);
 }
 
 sub is_regexp_string {
@@ -74,15 +82,30 @@ sub normalize_single_quoted {
     return unbackslash unsinglequote $str;
 }
 
-sub unquote_or_die {
+sub undouble_quote {
+    return unbackslash String::Escape::unquote $_[0];
+}
+
+sub unquote {
     my ($str) = @_;
     if (is_double_quoted($str)) {
-        return unbackslash unquote $str;
+        return undouble_quote($str);
     } elsif (is_single_quoted($str)) {
-        return unsinglequote $str;
+        return unsingle_quote($str);
     } else {
-        die "Syntax error: expected single- or double-quoted string at:\n\n\t$str\n\t^";
+        return $str;
     }
+}
+
+sub unquote_or_die {
+    my ($str) = @_;
+    my $processed = unquote($str);
+
+    die "Syntax error: expected single- or double-quoted string at:\n\n\t$str\n\t^";
+}
+
+sub unsingle_quote {
+    return unsinglequote $_[0];
 }
 
 sub pluralize {
