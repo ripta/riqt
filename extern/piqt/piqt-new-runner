@@ -20,6 +20,7 @@ my $connect_string  = 'oracle://vqa';
 my $format          = undef;
 my $output_file     = undef;
 my $extended_opts   = [ ];
+my $extra_plugins   = [ ];
 
 # Startup options
 my $config_driver   = '';
@@ -38,7 +39,8 @@ GetOptions(
     'c|connect=s'               => \$connect_string,
     'f|format=s'                => \$format,
     'o|output=s'                => \$output_file,
-    'x|extended-option=s@'      => $extended_opts,
+    'p|plugins=s@'              => $extra_plugins,
+    'x|extended-options=s@'     => $extended_opts,
 
     'i|ignore-startup-file!'    => sub { $config_driver = 'ignored' },
     'I'                         => sub { $config_driver = 'file' },
@@ -221,6 +223,11 @@ $repl->load_plugin('SqlPlusCompatibility');
 $repl->load_plugin('TerseQuery');
 $repl->load_plugin('Transactional');
 
+# Load any additional plugins
+foreach my $plugin_name (@$extra_plugins) {
+    $repl->load_plugin($plugin_name);
+}
+
 # A SQL query, if provided, should be the last thing on the arguments list
 if (@rest) {
     $repl->output->warnf("Too many command line arguments were given.");
@@ -297,7 +304,7 @@ Startup options:
   --startup-file <file>
   -s <file>     Use <file> as the startup file.
 
-  --extended-option <key>=<value>
+  --extended-options <key>=<value>
   -x <key>=<value>
                 Set a specific configuration <key> setting to <value>. This
                 option may be specified multiple times to set multiple keys:
@@ -313,6 +320,12 @@ Startup options:
                 Extended options are applied after PIQT is ready and after
                 the startup file is run, but before plugins are loaded and
                 before any queries are run.
+
+Plugin options:
+
+  --plugins <name>
+  -p <name>     Load a specific plugin by name; it attempts to be smart about
+                capitalization.
 
 Other options:
 
