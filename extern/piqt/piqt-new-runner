@@ -19,6 +19,7 @@ my $auto_connect    = undef;
 my $connect_string  = 'oracle://vqa';
 my $format          = undef;
 my $output_file     = undef;
+my $extended_opts   = [ ];
 
 # Startup options
 my $config_driver   = '';
@@ -37,6 +38,7 @@ GetOptions(
     'c|connect=s'               => \$connect_string,
     'f|format=s'                => \$format,
     'o|output=s'                => \$output_file,
+    'x|extended-option=s@'      => $extended_opts,
 
     'i|ignore-startup-file!'    => sub { $config_driver = 'ignored' },
     'I'                         => sub { $config_driver = 'file' },
@@ -190,6 +192,7 @@ $config_driver ||= $sql ? 'ignored' : 'file';
 # or not: CSV in non-interactive, and tabular in interactive
 $format ||= $sql ? 'csv' : 'tabular';
 
+# Initialize the REPL
 my $repl = Rent::PIQT::REPL->new(
     cache   => ["file", ".piqt_cache"],
     config  => [$config_driver, $startup_file],
@@ -198,6 +201,19 @@ my $repl = Rent::PIQT::REPL->new(
     verbose => ($verbose + 1),
 );
 
+# Process extended options after system is ready but before plugins,
+# so that they can modify any plugin defauts if necessary
+foreach my $extended_opt (@$extended_opts) {
+    my ($key, $value) = split /:/, $extended_opt, 2;
+    unless ($key) {
+        $repl->output->error("Extended option must be in 'key=value' format.");
+        next;
+    }
+
+    $repl->config->$key($value);
+}
+
+# Load the standard set of plugins
 $repl->load_plugin('DescribeObject');
 $repl->load_plugin('EditQuery');
 $repl->load_plugin('Print');
@@ -205,11 +221,13 @@ $repl->load_plugin('SqlPlusCompatibility');
 $repl->load_plugin('TerseQuery');
 $repl->load_plugin('Transactional');
 
-$repl->run($sql);
-
+# A SQL query, if provided, should be the last thing on the arguments list
 if (@rest) {
     $repl->output->warnf("Too many command line arguments were given.");
 }
+
+# Run the SQL query; this automatically starts up the REPL
+$repl->run($sql);
 
 exit();
 
@@ -278,6 +296,23 @@ Startup options:
 
   --startup-file <file>
   -s <file>     Use <file> as the startup file.
+
+  --extended-option <key>=<value>
+  -x <key>=<value>
+                Set a specific configuration <key> setting to <value>. This
+                option may be specified multiple times to set multiple keys:
+
+                    -x header=0 -x last_row_as_footer=1 -x paging=25
+
+                is the same as appending these lines to your startup file:
+
+                    SET header 0
+                    SET last_row_as_footer 1
+                    SET paging 25
+
+                Extended options are applied after PIQT is ready and after
+                the startup file is run, but before plugins are loaded and
+                before any queries are run.
 
 Other options:
 
