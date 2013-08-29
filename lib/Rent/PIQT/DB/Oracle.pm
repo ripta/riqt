@@ -5,7 +5,7 @@ use List::Util qw/max/;
 use Moo;
 use String::Escape qw/singlequote/;
 
-our $VERSION = '0.1.1';
+our $VERSION = '0.1.2';
 
 our $LOCKVIEW_SQL = qq{
     SELECT
@@ -248,9 +248,15 @@ around POSTBUILD => sub {
             my $sql = sprintf("SELECT DBMS_METADATA.GET_DDL('%s') FROM DUAL", join("', '", @fn_args));
             $ctrl->with_output('text',
                 sub {
+                    my ($o) = @_;
+                    $o->start_timing;
                     if ($self->do($sql)) {
                         my $rows = $self->display($ctrl->output);
-                        $ctrl->output->warnf("Object %s of type %s does not exist", quote($obj), $type) unless $rows;
+                        if ($rows) {
+                            $o->finish_timing($rows);
+                        } else {
+                            $o->warnf("Object %s of type %s does not exist", quote($obj), $type) unless $rows;
+                        }
                     }
                 },
             );
@@ -397,9 +403,15 @@ around POSTBUILD => sub {
 
             $ctrl->with_output('text',
                 sub {
+                    my ($o) = @_;
+                    $o->start_timing;
                     if ($self->do($sql, @fn_args)) {
                         my $rows = $self->display($ctrl->output);
-                        $ctrl->output->warnf("Object %s of type %s does not exist", quote($obj), $type) unless $rows;
+                        if ($rows) {
+                            $o->finish_timing($rows);
+                        } else {
+                            $o->warnf("Object %s of type %s does not exist", quote($obj), $type) unless $rows;
+                        }
                     }
                 },
             );
