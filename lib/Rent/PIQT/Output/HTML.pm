@@ -14,9 +14,9 @@ sub start {
 
     $self->println(q{<html><body>});
     $self->println(q{<table>});
-    $self->print('<tr><td>');
-    $self->print(join '</td><td>', map { $self->_escape($_->{'name'}) } @$fields);
-    $self->print('</td></tr>');
+    $self->print('<tr><th>');
+    $self->print(join '</th><th>', map { $self->_escape($_->{'name'}) } @$fields);
+    $self->print('</th></tr>');
 }
 
 sub finish {

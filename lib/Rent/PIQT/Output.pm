@@ -330,7 +330,8 @@ Rent::PIQT::Output - Base class for PIQT output drivers
 =head1 SYNOPSIS
 
 This class should not be initialized directly, but rather, should be subclassed
-with implementations of the methods: start, finish, and record.
+with implementations of the methods: C<start>, C<finish>, C<record>, and
+C<print>. See method documentation for more detail.
 
 =head1 AUTHOR
 
