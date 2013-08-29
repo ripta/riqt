@@ -5,7 +5,7 @@ use List::Util qw/max/;
 use Moo;
 use String::Escape qw/singlequote/;
 
-our $VERSION = '0.1.0';
+our $VERSION = '0.1.1';
 
 our $LOCKVIEW_SQL = qq{
     SELECT
@@ -216,7 +216,8 @@ around POSTBUILD => sub {
         help => q{
             Print the creation DDL for a database object. DDL retrieval may take a while.
             For a faster alternative, if all you need is the definition of the object and
-            not a well-formed DDL, try 'SHOW SOURCE'.
+            not a well-formed DDL, try 'SHOW SOURCE', which takes the same arguments as
+            this command.
 
             If <object_name> is surrounded by double-quotes, it is treated as-is.
             Otherwise, it is treated as all uppercased.
@@ -346,6 +347,63 @@ around POSTBUILD => sub {
             $sql .= join ' ', @args if @args;
 
             $self->do_and_display($sql, $ctrl->output);
+            return 1;
+        },
+    });
+
+    $self->controller->register('show source', {
+        signature => [
+            '%s FUNCTION <object_name>',
+            '%s MATERIALIZED VIEW <object_name>',
+            '%s PACKAGE <object_name>',
+            '%s PROCEDURE <object_name>',
+            '%s TABLE <object_name>',
+            '%s VIEW <object_name>',
+        ],
+        help => q{
+            Print the source of the object, as originally created. The source may not
+            necessarily be compileable. For a well-formed DDL, try 'SHOW CREATE', which
+            takes the same arguments as this command.
+
+            If <object_name> is surrounded by double-quotes, it is treated as-is.
+            Otherwise, it is treated as all uppercased.
+        },
+        code => sub {
+            my ($ctrl, @args) = @_;
+
+            my $obj = pop @args;
+            my $type = uc join ' ', @args;
+
+            die "Object type is missing." unless $type;
+            die "Object name is missing." unless $obj;
+
+            if (is_double_quoted($obj)) {
+                $obj = unquote_or_die $obj;
+            } else {
+                $obj = uc $obj;
+            }
+
+            my @fn_args = ();
+            my $sql     = '';
+
+            if ($obj =~ m{\.}) {
+                my ($schema, $name) = split /\./, $obj;
+                $sql = 'SELECT text FROM all_source WHERE type = ? AND name = ? AND owner = ? ORDER BY line ASC';
+                @fn_args = ($type, $name, $schema);
+            } else {
+                $sql = 'SELECT text FROM user_source WHERE type = ? AND name = ? ORDER BY line ASC';
+                @fn_args = ($type, $obj);
+            }
+
+            $ctrl->with_output('text',
+                sub {
+                    if ($self->do($sql, @fn_args)) {
+                        my $rows = $self->display($ctrl->output);
+                        $ctrl->output->warnf("Object %s of type %s does not exist", quote($obj), $type) unless $rows;
+                    }
+                },
+            );
+
             return 1;
         },
     });
