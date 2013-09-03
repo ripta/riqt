@@ -45,8 +45,8 @@ GetOptions(
     's|startup-file=s'          => \$startup_file,
 
     'list-drivers'              => \$list_drivers,
-) or pod2usage(2);
-pod2usage(1) if $help;
+) or pod2usage(-verbose => 2);
+pod2usage(-verbose => 2) if $help;
 
 # List all available drivers.
 if ($list_drivers) {
