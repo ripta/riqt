@@ -210,6 +210,7 @@ foreach my $extended_opt (@$extended_opts) {
         next;
     }
 
+    $key =~ s/-/_/g;
     $repl->config->$key($value);
 }
 
