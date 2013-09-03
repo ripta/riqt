@@ -81,7 +81,6 @@ around POSTBUILD => sub {
     $self->controller->config->register('date_format',
         sub {
             my ($config, $name, $old_value, $new_value) = @_;
-
             return unless $self->driver;
             $self->driver->do("ALTER SESSION SET NLS_DATE_FORMAT = '" . $new_value ."'");
             $self->controller->output->okf("Session has been altered to format dates as '%s'", $new_value);
@@ -92,6 +91,13 @@ around POSTBUILD => sub {
         sub {
             my ($config, $name, $old_value, $new_value) = @_;
             $config->date_format($new_value ? 'DD-MON-YYYY HH24:MI:SS' : 'DD-MON-YYYY');
+        },
+    );
+
+    $self->controller->config->register('iso_dates',
+        sub {
+            my ($config, $name, $old_value, $new_value) = @_;
+            $config->date_format($new_value ? 'YYYY-MM-DD HH24:MI:SS' : 'DD-MON-YYYY');
         },
     );
 
