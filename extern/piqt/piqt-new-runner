@@ -132,8 +132,8 @@ if ($connect_string =~ m{^([^/]+)/([^@])@(.+)$}) {
         $db_user,
     );
 
-    if (try_load_class('Company::Util')) {
-        my $db_pass = Company::Util::get_password(
+    if (try_load_class('Company::Util::Password')) {
+        my $db_pass = Company::Util::Password::get_password(
             resource => sprintf('oracle:%s@%s', lc $db_user, lc $db_name),
             noprompt => 1,
         );
@@ -153,16 +153,16 @@ if ($connect_string =~ m{^([^/]+)/([^@])@(.+)$}) {
     if ($load_success) {
         my $db_name = Company::Config::parameter('db_instance');
         my $db_user = Company::Config::parameter('db_username');
-        my $db_pass = Company::Config::parameter('db_password');
+        print STDERR "Auto-connecting to $db_user\@$db_name\n";
 
-        if (!$db_pass && try_load_class('Company::Util')) {
-            $db_pass = Company::Util::get_password(
+        my $db_pass = '';
+        if (!$db_pass && try_load_class('Company::Util::Password')) {
+            $db_pass = Company::Util::Password::get_password(
                 resource => sprintf('oracle:%s@%s', lc $db_user, lc $db_name),
                 noprompt => 1,
             );
         }
 
-        print STDERR "Auto-connecting to $db_user\@$db_name\n" if $verbose;
         $connect_string = sprintf(
             'oracle://%s?username=%s&password=%s',
             $db_name,
