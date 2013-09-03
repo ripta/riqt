@@ -204,7 +204,7 @@ my $repl = Rent::PIQT::REPL->new(
 # Process extended options after system is ready but before plugins,
 # so that they can modify any plugin defauts if necessary
 foreach my $extended_opt (@$extended_opts) {
-    my ($key, $value) = split /:/, $extended_opt, 2;
+    my ($key, $value) = split /=/, $extended_opt, 2;
     unless ($key) {
         $repl->output->error("Extended option must be in 'key=value' format.");
         next;
