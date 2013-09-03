@@ -31,7 +31,7 @@ my $list_drivers    = undef;
 # Parse various command-line arguments
 Getopt::Long::config('no_ignore_case', 'bundling');
 GetOptions(
-    'help|?'                    => \$help,
+    'help|h'                    => \$help,
     'v|verbose+'                => \$verbose,
 
     'c|connect=s'               => \$connect_string,
@@ -267,7 +267,7 @@ Generic options:
 
   -v, --verbose Be verbose and print debugging information when running.
                 Specify multiple times to print more debugging.
-  -?, --help    Print help and exit
+  -h, --help    Print help and exit
 
 Driver options:
 
