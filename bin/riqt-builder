@@ -14,8 +14,8 @@ use File::Copy qw(copy);
 use File::Path qw(mkpath rmtree);
 use B qw(perlstring);
 
-my $file = 'extern/piqt/piqt-new-runner';
-my $out_file = 'extern/piqt/piqt-new';
+my $file = shift @ARGV || die "Usage: $0 <bin/runner> <bin/riqt>\n";
+my $out_file = shift @ARGV || die "Usage: $0 <bin/runner> <bin/riqt>\n";
 
 unless ( -r $file ) {
     die "$file is not readable";
