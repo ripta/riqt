@@ -50,7 +50,7 @@ with "Rent::PIQT::DB";
 sub _build_driver {
     my ($self) = @_;
 
-    return DBI->connect(
+    my $handle = DBI->connect(
         'dbi:Oracle:' . $self->database,
         $self->username,
         $self->password,
@@ -61,7 +61,10 @@ sub _build_driver {
             'RaiseError'  => 0,
             'PrintError'  => 0,
         }
-    ) or die DBI->errstr;
+    );
+
+    return $handle if $handle;
+    die "Invalid connection information: " . $DBI::errstr;
 }
 
 # Transforms Oracle->new($db, $user, $pass) into Oracle->new(\%opts).

@@ -117,10 +117,6 @@ do {
     }
 };
 
-if ($connect_string) {
-    print "$connect_string\n";
-}
-
 if ($connect_string =~ m{^([^/]+)/([^@]+)\@(.+)$}) {
     $connect_string = sprintf(
         'oracle://%s?username=%s&password=%s',

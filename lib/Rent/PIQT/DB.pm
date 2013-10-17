@@ -404,6 +404,8 @@ sub prepare {
         return 0;
     }
 
+    die "Cannot connect to database " . $self->dsn . "" unless $self->driver;
+
     my $sth = $self->driver->prepare($query);
     if ($sth) {
         $o->debugf("Query prepared as %s", $sth);
