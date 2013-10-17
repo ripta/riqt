@@ -5,21 +5,23 @@ no warnings 'once'; # guard against -w
 sub _getglob { \*{$_[0]} }
 sub _getstash { \%{"$_[0]::"} }
 
-use constant lt_5_8_3 => ( $] < 5.008003 ) ? 1 : 0;
+use constant lt_5_8_3 => ( $] < 5.008003 or $ENV{MOO_TEST_PRE_583} ) ? 1 : 0;
 use constant can_haz_subname => eval { require Sub::Name };
 
 use strictures 1;
 use Module::Runtime qw(require_module);
+use Devel::GlobalDestruction ();
 use base qw(Exporter);
 use Moo::_mro;
 
 our @EXPORT = qw(
     _getglob _install_modifier _load_module _maybe_load_module
     _get_linear_isa _getstash _install_coderef _name_coderef
-    _in_global_destruction
+    _unimport_coderefs _in_global_destruction
 );
 
-sub _in_global_destruction;
+sub _in_global_destruction ();
+*_in_global_destruction = \&Devel::GlobalDestruction::in_global_destruction;
 
 sub _install_modifier {
   my ($into, $type, $name, $code) = @_;
@@ -65,12 +67,34 @@ sub _get_linear_isa {
 }
 
 sub _install_coderef {
+  no warnings 'redefine';
   *{_getglob($_[0])} = _name_coderef(@_);
 }
 
 sub _name_coderef {
   shift if @_ > 2; # three args is (target, name, sub)
   can_haz_subname ? Sub::Name::subname(@_) : $_[1];
+}
+
+sub _unimport_coderefs {
+  my ($target, $info) = @_;
+  return unless $info and my $exports = $info->{exports};
+  my %rev = reverse %$exports;
+  my $stash = _getstash($target);
+  foreach my $name (keys %$exports) {
+    if ($stash->{$name} and defined(&{$stash->{$name}})) {
+      if ($rev{$target->can($name)}) {
+        my $old = delete $stash->{$name};
+        my $full_name = join('::',$target,$name);
+        # Copy everything except the code slot back into place (e.g. $has)
+        foreach my $type (qw(SCALAR HASH ARRAY IO)) {
+          next unless defined(*{$old}{$type});
+          no strict 'refs';
+          *$full_name = *{$old}{$type};
+        }
+      }
+    }
+  }
 }
 
 sub STANDARD_DESTROY {
@@ -87,52 +111,6 @@ sub STANDARD_DESTROY {
 
   no warnings 'misc';
   die $e if $e; # rethrow
-}
-
-if (defined ${^GLOBAL_PHASE}) {
-    eval 'sub _in_global_destruction () { ${^GLOBAL_PHASE} eq q[DESTRUCT] }';
-} else {
-  eval <<'PP_IGD' or die $@;
-
-my ($in_global_destruction, $before_is_installed);
-
-sub _in_global_destruction { $in_global_destruction }
-
-END {
-  # SpeedyCGI runs END blocks every cycle but somehow keeps object instances
-  # hence lying about it seems reasonable...ish
-  $in_global_destruction = 1 unless $CGI::SpeedyCGI::i_am_speedy;
-}
-
-# threads do not execute the global ENDs (it would be stupid). However
-# one can register a new END via simple string eval within a thread, and
-# achieve the same result. A logical place to do this would be CLONE, which
-# is claimed to run in the context of the new thread. However this does
-# not really seem to be the case - any END evaled in a CLONE is ignored :(
-# Hence blatantly hooking threads::create
-
-if ($INC{'threads.pm'}) {
-  my $orig_create = threads->can('create');
-  no warnings 'redefine';
-  *threads::create = sub {
-    { local $@; eval 'END { $in_global_destruction = 1 }' };
-    goto $orig_create;
-  };
-  $before_is_installed = 1;
-}
-
-# just in case threads got loaded after us (silly)
-sub CLONE {
-  unless ($before_is_installed) {
-    require Carp;
-    Carp::croak("You must load the 'threads' module before @{[ __PACKAGE__ ]}");
-  }
-}
-
-1;  # keep eval happy
-
-PP_IGD
-
 }
 
 1;
