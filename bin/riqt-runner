@@ -117,14 +117,18 @@ do {
     }
 };
 
-if ($connect_string =~ m{^([^/]+)/([^@])@(.+)$}) {
+if ($connect_string) {
+    print "$connect_string\n";
+}
+
+if ($connect_string =~ m{^([^/]+)/([^@]+)\@(.+)$}) {
     $connect_string = sprintf(
         'oracle://%s?username=%s&password=%s',
         $3,
         $1,
         $2,
     );
-} elsif ($connect_string =~ m{^([^@]+)@(.+)$}) {
+} elsif ($connect_string =~ m{^([^/@]+)\@(.+)$}) {
     my ($db_user, $db_name) = ($1, $2);
     $connect_string = sprintf(
         'oracle://%s?username=%s',
