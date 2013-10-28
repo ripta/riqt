@@ -5,7 +5,7 @@ use Rent::PIQT::Util;
 
 with 'Rent::PIQT::Component';
 
-has 'is_modified' => (is => 'rw', 'default' => 0);
+has 'is_modified' => (is => 'rw', 'default' => sub { 0 });
 
 sub AUTOLOAD {
     my ($self, @args) = @_;

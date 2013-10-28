@@ -199,7 +199,7 @@ sub _set_controller {
 has 'verbose' => (
     is => 'rw',
     required => 0,
-    default => 0,
+    default => sub { 0 },
 );
 
 # Registered internal commands.
