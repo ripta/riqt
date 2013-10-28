@@ -44,15 +44,29 @@ requires qw/record/;
 
 sub BUILDARGS {
     my ($class, $proto) = @_;
-    return unless $proto;
-    return $proto if ref $proto eq 'HASH';
-    return $proto unless $proto->can('err') && $proto->can('out');
-    return {
-        err             => $proto->err,
-        out             => $proto->out,
-        character_set   => $proto->character_set,
-        unicode         => $proto->unicode,
-    };
+
+    # Validate the arguments
+    die 'Invalid prototype for ' . __PACKAGE__ . '->BUILDARGS: a HASHREF or hash-convertible object is required' unless $proto;
+    die 'Invalid prototype for ' . __PACKAGE__ . '->BUILDARGS: ' . $proto . ' is not a HASHREF or hash-convertible object' unless ref $proto;
+
+    # Attempt to copy the prototype from an object that knows of err and out
+    if (ref $proto ne 'HASH') {
+        if (ref $proto && $proto->can('err') && $proto->can('out')) {
+            $proto = {
+                err             => $proto->err,
+                out             => $proto->out,
+                character_set   => $proto->character_set,
+                unicode         => $proto->unicode,
+            };
+        }
+    }
+
+    # Validate the prototype
+    die 'Invalid prototype for ' . __PACKAGE__ . '->BUILDARGS: ' . $proto . ' is not a HASHREF or a hash-convertible object' unless ref $proto eq 'HASH';
+    die 'Incomplete prototype for ' . __PACKAGE__ . ': missing "err" value' unless defined $proto->{'err'};
+    die 'Incomplete prototype for ' . __PACKAGE__ . ': missing "out" value' unless defined $proto->{'out'};
+
+    return $proto;
 }
 
 sub POSTBUILD {
