@@ -101,7 +101,8 @@ sub unquote_or_die {
     my ($str) = @_;
     my $processed = unquote($str);
 
-    die "Syntax error: expected single- or double-quoted string at:\n\n\t$str\n\t^";
+    die "Syntax error: expected single- or double-quoted string at:\n\n\t$str\n\t^" if $str eq $processed;
+    return $processed;
 }
 
 sub unsingle_quote {
