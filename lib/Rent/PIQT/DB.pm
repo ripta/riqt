@@ -1,5 +1,7 @@
 package Rent::PIQT::DB;
 
+use Time::Piece;
+
 use Moo::Role;
 
 with 'Rent::PIQT::Component';
@@ -54,8 +56,10 @@ sub POSTBUILD {
 
             $ctrl->output->start_timing;
             if (my $objects = $self->object_names) {
-                $ctrl->cache->set('object_names', $objects);
-                $ctrl->cache->set('object_ts',    time);
+                my $ts = localtime();
+                $ctrl->cache->set('object_names',       $objects);
+                $ctrl->cache->set('object_ts_epoch',    $ts->epoch);
+                $ctrl->cache->set('object_ts_iso8601',  $ts->datetime);
                 $ctrl->output->okf("Loaded %d objects into cache", scalar(@{ $ctrl->cache->get('object_names') }));
                 $ctrl->output->finish_timing;
             } else {
