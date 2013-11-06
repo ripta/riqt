@@ -10,7 +10,7 @@ use String::Escape qw/quote printable/;
 use Term::ReadLine;
 use Time::HiRes qw/gettimeofday tv_interval/;
 
-our $VERSION = '0.5.17';
+our $VERSION = '0.5.18';
 
 # Generate the 'isa' clause for some 'has' below. Given a C<$name>, this sub
 # generates an anonymous subroutine that in turn expects one argument that is
@@ -735,6 +735,8 @@ sub load_plugin {
 # Return values can be a combination of the above. For instance, the value +3
 # implies that the internal command was successful, while a value of +6 means
 # that the SQL query was generated internally through munging and failed.
+#
+# TODO: Perhaps clean up the return values and make them less magical?
 sub process {
     my ($self, $buffer, $line) = @_;
 
@@ -781,7 +783,8 @@ sub process {
             die $@;
         }
 
-        # Display a continuation prompt if the query isn't already complete
+        # Display a continuation prompt if the DB driver determines that the
+        # query isn't complete
         unless ($self->db->query_is_complete($$buffer)) {
             $self->output->debugf("      Skip driver doesn't think query-is-complete");
             $$buffer .= "\n";
@@ -791,7 +794,7 @@ sub process {
 
     $self->output->debugf("      Continue process buffer");
 
-    # Sanitize the query as necesary
+    # Allow the DB driver to sanitize the query as necesary
     $$buffer = $self->db->sanitize($$buffer);
 
     # Prepare and execute the query
