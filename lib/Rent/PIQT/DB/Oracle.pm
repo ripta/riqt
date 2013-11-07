@@ -83,6 +83,31 @@ around POSTBUILD => sub {
     my ($orig, $self) = @_;
     $self->$orig;
 
+    $self->controller->config->register('server_output', 
+        sub {
+            my ($config, $name, $old_value, $new_value) = @_;
+            my $output = $self->controller->output;
+            return unless $self->driver;
+
+            $new_value = 20_000 if $new_value == 1;
+            die "Unknown value '$new_value'; expected 'on', 'off', or an integer" if $new_value =~ /\D/;
+
+            if ($new_value > 0) {
+                if ($self->driver->func($new_value, 'dbms_output_enable')) {
+                    $output->okf("DBMS_OUTPUT will now buffer %d lines", $new_value);
+                } else {
+                    $output->error("Could not activate DBMS_OUTPUT module");
+                }
+            } else {
+                if ($self->driver->func('dbms_output_disable')) {
+                    $output->ok("DBMS_OUTPUT buffer has been disabled");
+                } else {
+                    $output->error("Could not disable DBMS_OUTPUT module");
+                }
+            }
+        },
+    );
+
     $self->controller->config->register('date_format',
         sub {
             my ($config, $name, $old_value, $new_value) = @_;
@@ -782,6 +807,30 @@ around POSTBUILD => sub {
             return 1;
         }
     });
+};
+
+# Retrieve the contents of the DBMS_OUTPUT buffer, and display it as an
+# indented warning to the end user. This option must be activated using:
+#
+#   SET server_output ON;
+around cleanup_query => sub {
+    my ($orig, $self, $success) = @_;
+    my $output = $self->controller->output;
+
+    $success = $self->$orig($success);
+
+    if ($self->controller->config->server_output) {
+        my @buffer = $self->driver->func('dbms_output_get');
+        if (@buffer) {
+            $output->debugf("Retrieved %d lines from DBMS_OUTPUT", scalar(@buffer));
+            $output->warn();
+            $output->warn("  $_") for @buffer;
+        } else {
+            $output->debug("No lines in DBMS_OUTPUT buffer");
+        }
+    }
+
+    return $success;
 };
 
 # Transform the output of describe_object into something more palatable, which
