@@ -819,12 +819,14 @@ sub process {
         }
 
         $self->output->finish_timing($row_num || $self->db->rows_affected);
+        $self->db->cleanup_query(1);
 
         $$buffer = '';
         return 5;
     } else {
         $self->output->reset_timing;
         $self->output->error($self->db->last_error);
+        $self->db->cleanup_query(0);
 
         $$buffer = '';
         return 4;

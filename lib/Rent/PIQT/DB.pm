@@ -74,6 +74,11 @@ sub POSTBUILD {
     );
 }
 
+sub cleanup_query {
+    my ($self, $success) = @_;
+    return $success;
+}
+
 sub commit {
     my ($self) = @_;
     return $self->driver->commit ? 1 : 0;
