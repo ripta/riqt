@@ -10,7 +10,7 @@ use String::Escape qw/quote printable/;
 use Term::ReadLine;
 use Time::HiRes qw/gettimeofday tv_interval/;
 
-our $VERSION = '0.5.18';
+our $VERSION = '0.5.19';
 
 # Generate the 'isa' clause for some 'has' below. Given a C<$name>, this sub
 # generates an anonymous subroutine that in turn expects one argument that is
