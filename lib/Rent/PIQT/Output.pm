@@ -210,15 +210,26 @@ sub finish_timing {
     return unless $self->controller->verbose;
     return unless $self->controller->config->timing;
 
+    # Calculate time passed
+    my $duration = tv_interval($self->start_time);
+
+    # Show different formatting depending on duration
+    my $timing_string;
+    if ($duration >= 100) {
+        $timing_string = sprintf('%0d:%05.2f', int($duration / 60), $duration % 60);
+    } else {
+        $timing_string = sprintf('%0.3f s', $duration);
+    }
+
     if (defined $rows_affected) {
-        $self->okf("%d %s affected in %d ms",
+        $self->okf("%d %s affected in %s",
             $rows_affected,
             $rows_affected == 1 ? 'row' : 'rows',
-            int(tv_interval($self->start_time) * 1000),
+            $timing_string,
         );
     } else {
-        $self->okf("Completed in %d ms",
-            int(tv_interval($self->start_time) * 1000),
+        $self->okf("Completed in %s",
+            $timing_string,
         );
     }
 
