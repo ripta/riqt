@@ -84,7 +84,8 @@ around POSTBUILD => sub {
     $self->$orig;
 
     $self->controller->config->register('server_output', 
-        sub {
+        persist => 1,
+        hook => sub {
             my ($config, $name, $old_value, $new_value) = @_;
             my $output = $self->controller->output;
             return unless $self->driver;
@@ -700,8 +701,8 @@ around POSTBUILD => sub {
                     table_name,
                     status,
                     tablespace_name,
-                    num_rows,
-                    avg_row_len,
+                    num_rows AS number_of_rows,
+                    avg_row_len AS average_row_length,
                     last_analyzed
                 FROM
                     ${scope}_tables
