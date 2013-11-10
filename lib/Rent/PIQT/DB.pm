@@ -244,7 +244,11 @@ sub execute {
     my $o = $self->controller->output;
 
     if ($self->statement->execute(@args)) {
-        $o->debugf("Statement executed with arguments (%s)", join(", ", @args));
+        if (@args) {
+            $o->debugf("Statement %s executed with arguments (%s)", $self->statement, join(", ", map { quote printable $_ } @args));
+        } else {
+            $o->debugf("Statement %s executed with no arguments", $self->statement);
+        }
         return 1;
     } else {
         $o->debugf("Statement cannot be executed: %s", $self->statement->errstr);
@@ -417,12 +421,12 @@ sub prepare {
 
     my $sth = $self->driver->prepare($query);
     if ($sth) {
-        $o->debugf("Query prepared as %s", $sth);
+        $o->debugf("Query\n%s\n  prepared as %s", $o->reindent($query), $sth);
         $self->statement($sth);
         $self->last_query($query) if $opts{'save_query'};
         return 1;
     } else {
-        $o->debugf("Query could not be prepared: %s", $self->driver->errstr);
+        $o->debugf("Query\n%s\n  could not be prepared: %s", $o->reindent($query), $self->driver->errstr);
         $self->last_error($self->driver->errstr);
         $self->statement(undef);
         return 0;
