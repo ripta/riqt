@@ -99,6 +99,8 @@ if ($list_drivers) {
     exit;
 }
 
+print STDERR "Bootstrapping...\n" if $verbose;
+
 # Open the output file, if specified; defaults to STDOUT and STDERR
 my ($output_fh, $error_fh);
 do {

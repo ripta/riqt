@@ -71,7 +71,6 @@ sub BUILDARGS {
 
 sub POSTBUILD {
     my ($self) = @_;
-
     $self->controller->output->debugf("Output driver %s is ready: OUT=(%s) ERR=(%s)",
         ref $self,
         $self->out ? $self->out->fileno : '',
