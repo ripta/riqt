@@ -1,8 +1,8 @@
-package Rent::PIQT::Output::Vertical;
+package RIQT::Output::Vertical;
 
 use Moo;
 
-with 'Rent::PIQT::Output';
+with 'RIQT::Output';
 
 
 sub start {
@@ -39,7 +39,7 @@ sub record {
 
 =head1 NAME
 
-Rent::PIQT::Output::Vertical - Vertical output driver for PIQT
+RIQT::Output::Vertical - Vertical output driver for RIQT
 
 =head1 SYNOPSIS
 

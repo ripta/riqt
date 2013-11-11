@@ -1,10 +1,10 @@
-package Rent::PIQT::DB;
+package RIQT::DB;
 
 use Time::Piece;
 
 use Moo::Role;
 
-with 'Rent::PIQT::Component';
+with 'RIQT::Component';
 
 has 'database' => (
     is => 'rw',

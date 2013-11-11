@@ -1,11 +1,11 @@
-package Rent::PIQT::REPL;
+package RIQT::REPL;
 
 use Moo;
 
 use Carp;
 use Class::Load qw/try_load_class/;
 use Data::Dumper;
-use Rent::PIQT::Util;
+use RIQT::Util;
 use String::Escape qw/quote printable/;
 use Term::ReadLine;
 use Time::HiRes qw/gettimeofday tv_interval/;
@@ -14,14 +14,14 @@ our $VERSION = '0.5.19';
 
 # Generate the 'isa' clause for some 'has' below. Given a C<$name>, this sub
 # generates an anonymous subroutine that in turn expects one argument that is
-# a string representing a class that is either C<Rent::PIQT::$name>, or mixes
+# a string representing a class that is either C<RIQT::$name>, or mixes
 # a Moo::Role with the same qualified name.
 sub _generate_isa_for {
     my ($name) = @_;
     return sub {
-        die "The '" . lc($name) . "' attribute of Rent::PIQT::REPL is required" unless $_[0];
+        die "The '" . lc($name) . "' attribute of RIQT::REPL is required" unless $_[0];
         my $info = ref($_[0]) || $_[0];
-        die "The '" . lc($name) . "' attribute of Rent::PIQT::REPL, which is a '$info' must implement Rent::PIQT::$name" unless $_[0]->does("Rent::PIQT::$name") || $_[0]->isa("Rent::PIQT::$name");
+        die "The '" . lc($name) . "' attribute of RIQT::REPL, which is a '$info' must implement RIQT::$name" unless $_[0]->does("RIQT::$name") || $_[0]->isa("RIQT::$name");
     };
 }
 
@@ -103,7 +103,7 @@ sub _search_under {
 # Reference to cache handler. Each cache implementation takes its own set of
 # arguments. If a cache is instantiated by:
 #
-#   Rent::PIQT::Cache::Example->new('abc', 'def');
+#   RIQT::Cache::Example->new('abc', 'def');
 #
 # then this attribute can be set on the REPL object using:
 #
@@ -112,14 +112,14 @@ has 'cache' => (
     is => 'rw',
     isa => _generate_isa_for('Cache'),
     required => 1,
-    coerce => _search_and_instantiate_under('Rent::PIQT::Cache'),
+    coerce => _search_and_instantiate_under('RIQT::Cache'),
     trigger => \&_set_controller,
 );
 
 # Reference to configuration container. Each configuration implementation takes
 # its own set of arguments. If a configuration is instantiated by:
 #
-#   Rent::PIQT::Config::Example->new('abc', 'def');
+#   RIQT::Config::Example->new('abc', 'def');
 #
 # then this attribute can be set on the REPL object using:
 #
@@ -128,7 +128,7 @@ has 'config' => (
     is => 'rw',
     isa => _generate_isa_for('Config'),
     required => 1,
-    coerce => _search_and_instantiate_under('Rent::PIQT::Config'),
+    coerce => _search_and_instantiate_under('RIQT::Config'),
     trigger => \&_set_controller,
 );
 
@@ -140,7 +140,7 @@ has 'config' => (
 #
 # will both instantiate the following driver:
 #
-#   Rent::PIQT::DB::Driver->new({database => 'abc', username => 'def', password => "xyz"});
+#   RIQT::DB::Driver->new({database => 'abc', username => 'def', password => "xyz"});
 #
 # extra arguments can be specified as needed, depending on the database driver.
 has 'db' => (
@@ -150,7 +150,7 @@ has 'db' => (
     coerce => sub {
         my ($val) = @_;
         return unless $val;
-        return $val if ref $val && UNIVERSAL::isa($val, 'Rent::PIQT::DB');
+        return $val if ref $val && UNIVERSAL::isa($val, 'RIQT::DB');
 
         my ($klass, @args);
         if (ref $val eq 'ARRAY') {
@@ -168,7 +168,7 @@ has 'db' => (
         }
         return unless $klass;
 
-        $klass = _search_under('Rent::PIQT::DB', $klass);
+        $klass = _search_under('RIQT::DB', $klass);
         return $klass->new(@args);
     },
     trigger => \&_set_controller,
@@ -180,7 +180,7 @@ has 'output' => (
     is => 'rw',
     isa => _generate_isa_for('Output'),
     required => 1,
-    coerce => _search_and_instantiate_under('Rent::PIQT::Output'),
+    coerce => _search_and_instantiate_under('RIQT::Output'),
     trigger => \&_set_controller,
 );
 
@@ -238,11 +238,11 @@ has '_term'   => (
 );
 sub _build__term {
     my ($self) = @_;
-    my $h = $self->config->history_file || $ENV{'HOME'} . '/.piqt_history';
+    my $h = $self->config->history_file || $ENV{'HOME'} . '/.riqt_history';
     my $s = $self->config->history_size || $ENV{'HISTSIZE'} || 2000;
     my $o = $self->output;
 
-    my $t = Term::ReadLine->new('piqt');
+    my $t = Term::ReadLine->new('riqt');
 
     # Depending on the ReadLine driver---and unfortunately we have to compare
     # by string---we have to set up history differently
@@ -251,18 +251,18 @@ sub _build__term {
         $t->ReadHistory($h) if -f $h;
         $t->have_readline_history(1) if $t->can('have_readline_history');
 
-        $o->info("Welcome to piqt " . $self->version . " with GNU readline support");
+        $o->info("Welcome to riqt " . $self->version . " with GNU readline support");
     } elsif ($t->ReadLine eq 'Term::ReadLine::Perl') {
         $t->Attribs->{'MaxHistorySize'} = $s;
         $t->have_readline_history(1) if $t->can('have_readline_history');
 
-        $o->warn("piqt: Command line history will not survive multiple sessions.");
+        $o->warn("riqt: Command line history will not survive multiple sessions.");
         $o->warn("      Install Term::ReadLine::Gnu to fix that.");
-        $o->info("Welcome to piqt " . $self->version . " with Perl readline support");
+        $o->info("Welcome to riqt " . $self->version . " with Perl readline support");
     } else {
-        $o->warn("piqt: Command line history will probably not survive multiple");
+        $o->warn("riqt: Command line history will probably not survive multiple");
         $o->warn("      sessions. Install Term::ReadLine::Gnu to ensure it.");
-        $o->infof("Welcome to piqt " . $self->version . " with %s readline support", $t);
+        $o->infof("Welcome to riqt " . $self->version . " with %s readline support", $t);
     }
 
     # Information about some commands
@@ -342,8 +342,8 @@ sub BUILD {
                 SET                 Set a configuration variable to a new value
                 SHOW                Show a list of all configuration variables
                 SHOW COMMANDS       Show a list of all commands
-                QUIT                Quit PIQT
-                \Q                  Quit PIQT, too
+                QUIT                Quit RIQT
+                \Q                  Quit RIQT, too
                 ED                  Edit the last SQL query in your favorite editor
 
             If <command> contains whitespace, it should be single-quoted, for example,
@@ -479,7 +479,7 @@ sub BUILD {
         help => q{
             Loads a plugin package into the current session. The <package_name> must be
             quoted. If the package name contains ::, or begins with ::, it is used as-is.
-            Otherwise, the package name is searched under the PIQT::Plugins namespace.
+            Otherwise, the package name is searched under the RIQT::Plugins namespace.
         },
         code => sub {
             my ($ctrl, $args) = @_;
@@ -672,7 +672,7 @@ sub internal_commands {
 # beginning will be removed.
 #
 # If the plugin name doesn't contain ::, then it will be searched under the
-# Rent::PIQT::Plugin namespace.
+# RIQT::Plugin namespace.
 #
 # If a plugin has already been loaded, it will not be reloaded.
 sub load_plugin {
@@ -688,7 +688,7 @@ sub load_plugin {
             $plugin_name;
         };
     } else {
-        $plugin = eval { _search_under('Rent::PIQT::Plugin', $plugin_name) };
+        $plugin = eval { _search_under('RIQT::Plugin', $plugin_name) };
     }
 
     # Instantiate the plugin if a matching class could be loaded

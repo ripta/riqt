@@ -1,8 +1,8 @@
-package Rent::PIQT::Config::File;
+package RIQT::Config::File;
 
 use Moo;
 
-extends 'Rent::PIQT::Config';
+extends 'RIQT::Config';
 
 has 'filename' => (is => 'rw', required => 1);
 

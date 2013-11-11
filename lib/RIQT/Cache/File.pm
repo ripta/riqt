@@ -1,9 +1,9 @@
-package Rent::PIQT::Cache::File;
+package RIQT::Cache::File;
 
 use Moo;
 use Storable qw/nstore retrieve/;
 
-extends 'Rent::PIQT::Cache';
+extends 'RIQT::Cache';
 
 has 'filename' => (is => 'rw', required => 1);
 

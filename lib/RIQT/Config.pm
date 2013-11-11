@@ -1,9 +1,9 @@
-package Rent::PIQT::Config;
+package RIQT::Config;
 
 use Moo;
-use Rent::PIQT::Util;
+use RIQT::Util;
 
-with 'Rent::PIQT::Component';
+with 'RIQT::Component';
 
 has 'is_modified' => (is => 'rw', 'default' => sub { 0 });
 

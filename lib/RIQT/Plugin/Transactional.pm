@@ -1,10 +1,10 @@
-package Rent::PIQT::Plugin::Transactional;
+package RIQT::Plugin::Transactional;
 
 use Moo;
 
 our $VERSION = '1.0.0';
 
-with 'Rent::PIQT::Plugin';
+with 'RIQT::Plugin';
 
 sub BUILD {
     my ($self) = @_;

@@ -1,20 +1,20 @@
-package Rent::PIQT::Output;
+package RIQT::Output;
 
 use Data::Dumper;
 use Moo::Role;
 use Term::ANSIColor;
 use Time::HiRes qw/gettimeofday tv_interval/;
 
-with 'Rent::PIQT::Component';
+with 'RIQT::Component';
 
 has 'err' => (
     is => 'ro',
-    isa => sub { die "Attribute 'err' of 'Rent::PIQT::Output' must be an IO::Handle" unless $_[0]->isa('IO::Handle') },
+    isa => sub { die "Attribute 'err' of 'RIQT::Output' must be an IO::Handle" unless $_[0]->isa('IO::Handle') },
     required => 1,
 );
 has 'out' => (
     is => 'ro',
-    isa => sub { die "Attribute 'out' of 'Rent::PIQT::Output' must be an IO::Handle" unless $_[0]->isa('IO::Handle') },
+    isa => sub { die "Attribute 'out' of 'RIQT::Output' must be an IO::Handle" unless $_[0]->isa('IO::Handle') },
     required => 1,
 );
 
@@ -349,7 +349,7 @@ sub warnfq {
 
 =head1 NAME
 
-Rent::PIQT::Output - Base class for PIQT output drivers
+RIQT::Output - Base class for RIQT output drivers
 
 =head1 SYNOPSIS
 

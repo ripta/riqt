@@ -1,8 +1,8 @@
-package Rent::PIQT::Plugin;
+package RIQT::Plugin;
 
 use Moo::Role;
 
-with 'Rent::PIQT::Component';
+with 'RIQT::Component';
 
 requires qw/BUILD/;
 

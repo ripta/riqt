@@ -1,9 +1,9 @@
-package Rent::PIQT::Output::TSV;
+package RIQT::Output::TSV;
 
 use Moo;
 use String::Escape qw/backslash/;
 
-with 'Rent::PIQT::Output';
+with 'RIQT::Output';
 
 
 sub start {
@@ -25,7 +25,7 @@ sub record {
 
 =head1 NAME
 
-Rent::PIQT::Output::TSV - Tab-separated values output driver for PIQT
+RIQT::Output::TSV - Tab-separated values output driver for RIQT
 
 =head1 SYNOPSIS
 

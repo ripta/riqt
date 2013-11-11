@@ -1,4 +1,4 @@
-package Rent::PIQT::Util;
+package RIQT::Util;
 
 use strict;
 use String::Escape qw/

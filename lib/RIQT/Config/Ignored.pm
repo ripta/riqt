@@ -1,8 +1,8 @@
-package Rent::PIQT::Config::Ignored;
+package RIQT::Config::Ignored;
 
 use Moo;
 
-extends 'Rent::PIQT::Config';
+extends 'RIQT::Config';
 
 sub BUILDARGS {
     return {};

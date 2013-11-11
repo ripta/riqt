@@ -1,10 +1,10 @@
-package Rent::PIQT::Output::Text;
+package RIQT::Output::Text;
 
 use Moo;
 use String::Escape qw/printable/;
 use Time::HiRes qw/gettimeofday tv_interval/;
 
-with 'Rent::PIQT::Output';
+with 'RIQT::Output';
 
 has 'field_names', (is => 'rw');
 
@@ -38,7 +38,7 @@ sub record {
 
 =head1 NAME
 
-Rent::PIQT::Output::Text - Text output driver for PIQT
+RIQT::Output::Text - Text output driver for RIQT
 
 =head1 SYNOPSIS
 

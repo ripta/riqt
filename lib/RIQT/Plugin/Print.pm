@@ -1,10 +1,10 @@
-package Rent::PIQT::Plugin::Print;
+package RIQT::Plugin::Print;
 
 use Moo;
 
 our $VERSION = '0.5.0';
 
-with 'Rent::PIQT::Plugin';
+with 'RIQT::Plugin';
 
 our $TOKENS = {
     'date'      => sub {

@@ -8,7 +8,7 @@ use IO::Handle;
 use Pod::Usage;
 
 use Class::Load qw/try_load_class/;
-use Rent::PIQT::REPL;
+use RIQT::REPL;
 
 # Global options
 our $FATPACKED;
@@ -24,7 +24,7 @@ my $extra_plugins   = [ ];
 
 # Startup options
 my $config_driver   = '';
-my $startup_file    = '.piqtrc';
+my $startup_file    = '.riqtrc';
 
 # Other options
 my $list_drivers    = undef;
@@ -51,16 +51,16 @@ pod2usage(-verbose => 2) if $help;
 
 # List all available drivers.
 if ($list_drivers) {
-    my $basefile = 'Rent/PIQT';
+    my $basefile = 'RIQT';
     my $replfile = $basefile . '/REPL.pm';
-    my $replloc  = $INC{$replfile} || die "Cannot detect location of Rent::PIQT::REPL";
+    my $replloc  = $INC{$replfile} || die "Cannot detect location of RIQT::REPL";
 
     my $baseloc  = $replloc;
     $baseloc =~ s#$replfile##x;
 
     my $display = sub {
         my ($component, $human_name, $set_cmd) = @_;
-        my $compfile = "Rent/PIQT/$component";
+        my $compfile = "RIQT/$component";
         my $compdir  = "$baseloc/$compfile";
 
         print STDERR "Supported $human_name drivers",
@@ -196,8 +196,8 @@ $config_driver ||= $sql ? 'ignored' : 'file';
 $format ||= $sql ? 'csv' : 'tabular';
 
 # Initialize the REPL
-my $repl = Rent::PIQT::REPL->new(
-    cache   => ["file", ".piqt_cache"],
+my $repl = RIQT::REPL->new(
+    cache   => ["file", ".riqt_cache"],
     config  => [$config_driver, $startup_file],
     db      => $connect_string,
     output  => [$format, {out => $output_fh, err => $error_fh}],
@@ -244,15 +244,15 @@ exit();
 __END__
 =head1 NAME
 
-piqt - Perl Interactive Query Toolkit
+riqt - Rewritten(Perl) Interactive Query Toolkit
 
 =head1 SYNOPSIS
 
-./piqt [opts] [sql]
+./riqt [opts] [sql]
 
 =head1 OPTIONS
 
-This script is a Rent.com-specific version of PIQT with Rent.com-specific auto-
+This script is a Rent.com-specific version of RIQT with Rent.com-specific auto-
 connection rules:
 
   * If Company::Config can be loaded, then it'll connect to the default VIVA
@@ -263,7 +263,7 @@ connection rules:
     the -c or --connect option (see below).
 
 If a one-off [sql] is given on the command line, the provided SQL will be run.
-Otherwise, PIQT enters interactive mode. PIQT will process start-up files by
+Otherwise, RIQT enters interactive mode. RIQT will process start-up files by
 default in interactive mode, but skip it in one-off mode. See also the section
 on start-up files below.
 
@@ -302,7 +302,7 @@ Driver options:
 Startup options:
 
   --ignore-startup-file
-  -i            Ignore the start-up file ~/.piqtrc, which is useful if your
+  -i            Ignore the start-up file ~/.riqtrc, which is useful if your
                 start-up file has errors.
 
   --no-ignore-startup-file
@@ -325,7 +325,7 @@ Startup options:
                     SET last_row_as_footer 1
                     SET paging 25
 
-                Extended options are applied after PIQT is ready and after
+                Extended options are applied after RIQT is ready and after
                 the startup file is run, but before plugins are loaded and
                 before any queries are run.
 

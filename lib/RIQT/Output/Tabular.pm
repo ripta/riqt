@@ -1,10 +1,10 @@
-package Rent::PIQT::Output::Tabular;
+package RIQT::Output::Tabular;
 
 use Moo;
 use String::Escape qw/printable/;
 use Time::HiRes qw/gettimeofday tv_interval/;
 
-with 'Rent::PIQT::Output';
+with 'RIQT::Output';
 
 has 'fields', (is => 'rw');
 has 'field_sizes', (is => 'rw');
@@ -97,7 +97,7 @@ sub record {
 
 =head1 NAME
 
-Rent::PIQT::Output::Tabular - Table-oriented output driver for PIQT
+RIQT::Output::Tabular - Table-oriented output driver for RIQT
 
 =head1 SYNOPSIS
 

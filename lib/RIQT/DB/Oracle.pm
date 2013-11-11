@@ -1,4 +1,4 @@
-package Rent::PIQT::DB::Oracle;
+package RIQT::DB::Oracle;
 
 use DBI;
 use List::Util qw/max/;
@@ -43,7 +43,7 @@ our $LOCKVIEW_SQL = q<
         LEFT JOIN gv$sqlarea qa ON (qa.sql_id = s.sql_id)
 >;
 
-with "Rent::PIQT::DB";
+with "RIQT::DB";
 
 # Lazily connect to the driver. This also disables auto-commits, and some
 # default connection parameters.
@@ -141,7 +141,7 @@ around POSTBUILD => sub {
             my $sql = qq{
                 SELECT 'database' origin, TO_CHAR(SYSDATE) value FROM DUAL
                 UNION
-                SELECT 'piqt_tick', TO_CHAR($tick) FROM DUAL
+                SELECT 'riqt_tick', TO_CHAR($tick) FROM DUAL
             };
 
             if ($self->do($sql)) {
@@ -896,11 +896,11 @@ sub sanitize {
 
 =head1 NAME
 
-Rent::PIQT::DB::Oracle - Oracle-specific database driver for PIQT
+RIQT::DB::Oracle - Oracle-specific database driver for RIQT
 
 =head1 SYNOPSIS
 
-    my $driver = Rent::PIQT::DB::Oracle->new(
+   my $driver = RIQT::DB::Oracle->new(
         database => 'VQA',
         username => 'VIVA',
         password => '...',

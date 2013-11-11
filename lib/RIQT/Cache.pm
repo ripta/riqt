@@ -1,8 +1,8 @@
-package Rent::PIQT::Cache;
+package RIQT::Cache;
 
 use Moo;
 
-with 'Rent::PIQT::Component';
+with 'RIQT::Component';
 
 has 'namespace' => (is => 'rw', required => 0);
 
@@ -57,7 +57,7 @@ sub POSTBUILD {
             '%s LIKE <criterion>',
         ],
         help => q{
-            List the top-level contents of the PIQT object cache.
+            List the top-level contents of the RIQT object cache.
 
             The <criterion> is a single-quoted value, which if provided, will be used
             to match against the cache object. Unlike regular SQL LIKE clauses, the
@@ -164,7 +164,7 @@ sub touch {
 
 =head1 NAME
 
-Rent::PIQT::Cache - Cache component base class
+RIQT::Cache - Cache component base class
 
 =head1 SYNOPSIS
 

@@ -1,12 +1,12 @@
-package Rent::PIQT::Plugin::TerseQuery;
+package RIQT::Plugin::TerseQuery;
 
 use List::Util qw/max/;
 use Moo;
-use Rent::PIQT::Util;
+use RIQT::Util;
 
 our $VERSION = '0.5.0';
 
-with 'Rent::PIQT::Plugin';
+with 'RIQT::Plugin';
 
 sub BUILD {
     my ($self) = @_;

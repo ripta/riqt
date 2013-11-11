@@ -1,9 +1,9 @@
-package Rent::PIQT::Output::CSV;
+package RIQT::Output::CSV;
 
 use Moo;
 use String::Escape qw/printable quote/;
 
-with 'Rent::PIQT::Output';
+with 'RIQT::Output';
 
 
 sub start {
@@ -25,7 +25,7 @@ sub record {
 
 =head1 NAME
 
-Rent::PIQT::Output::CSV - CSV output driver for PIQT
+RIQT::Output::CSV - CSV output driver for RIQT
 
 =head1 SYNOPSIS
 

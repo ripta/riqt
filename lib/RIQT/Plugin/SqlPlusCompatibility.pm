@@ -1,11 +1,11 @@
-package Rent::PIQT::Plugin::SqlPlusCompatibility;
+package RIQT::Plugin::SqlPlusCompatibility;
 
 use Moo;
-use Rent::PIQT::Util;
+use RIQT::Util;
 
 our $VERSION = '0.5.0';
 
-with 'Rent::PIQT::Plugin';
+with 'RIQT::Plugin';
 
 our $REGISTERED = {
     appinfo     => sub {

@@ -1,9 +1,9 @@
-package Rent::PIQT::Output::JSON;
+package RIQT::Output::JSON;
 
 use Moo;
 use String::Escape qw/qqbackslash/;
 
-with 'Rent::PIQT::Output';
+with 'RIQT::Output';
 
 has 'field_names', (is => 'rw');
 has 'record_number', (is => 'rw');

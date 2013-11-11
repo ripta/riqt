@@ -1,8 +1,8 @@
-package Rent::PIQT::Output::HTML;
+package RIQT::Output::HTML;
 
 use Moo;
 
-with 'Rent::PIQT::Output';
+with 'RIQT::Output';
 
 sub _escape {
     my ($self, $value) = @_;

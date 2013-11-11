@@ -1,9 +1,9 @@
-package Rent::PIQT::Output::Columnar;
+package RIQT::Output::Columnar;
 
 use Moo;
 use Text::Table;
 
-with 'Rent::PIQT::Output';
+with 'RIQT::Output';
 
 has fields => (is => 'rw');
 
@@ -87,7 +87,7 @@ sub record {
 
 =head1 NAME
 
-Rent::PIQT::Output::Columnar - Column-oriented output driver for PIQT
+RIQT::Output::Columnar - Column-oriented output driver for RIQT
 
 =head1 SYNOPSIS
 

@@ -1,11 +1,11 @@
-package Rent::PIQT::Plugin::EditQuery;
+package RIQT::Plugin::EditQuery;
 
 use File::Temp qw/tempfile/;
 use Moo;
 
 our $VERSION = '1.0.0';
 
-with 'Rent::PIQT::Plugin';
+with 'RIQT::Plugin';
 
 sub BUILD {
     my ($self) = @_;

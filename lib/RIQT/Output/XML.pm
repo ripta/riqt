@@ -1,8 +1,8 @@
-package Rent::PIQT::Output::XML;
+package RIQT::Output::XML;
 
 use Moo;
 
-with 'Rent::PIQT::Output';
+with 'RIQT::Output';
 
 has 'field_names', (is => 'rw');
 
