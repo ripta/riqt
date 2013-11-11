@@ -71,7 +71,7 @@ sub BUILD {
                 close $fh;
 
                 if ($query) {
-                    if ($query ne $placeholder) {
+                    if ($query eq $placeholder) {
                         $o->warnf("Query placeholder was not overwritten.");
                     } else {
                         $ctrl->run_query($query);
