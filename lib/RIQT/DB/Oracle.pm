@@ -598,12 +598,14 @@ around POSTBUILD => sub {
         },
         code => sub {
             my ($ctrl, $sid, @rest) = @_;
-            die "Syntax error: too many arguments: @rest" if @rest;
-            die "Expected <sid> or ACTIVE" unless $sid;
+            die "Expected <sid>, ACTIVE, or WHERE clause" unless $sid;
 
             my $o = $ctrl->output;
 
-            if (lc $sid eq 'active') {
+            if (lc $sid eq 'active' || lc $sid eq 'where') {
+                die "Syntax error: too many arguments: @rest" if lc $sid eq 'active' && @rest;
+
+                my $clause = scalar(@rest) ? join(" ", @rest) : "session_status = 'ACTIVE'";
                 my $sql = qq{
                 SELECT
                     session_id
@@ -611,23 +613,34 @@ around POSTBUILD => sub {
                     $LOCKVIEW_SQL
                 )
                 WHERE
-                    session_status = 'ACTIVE'
+                    $clause
                 };
 
-                $self->do($sql);
+                my $counts = 0;
+                my $killed = 0;
+
+                unless ($self->do($sql)) {
+                    $o->errorf("Could not run query to determine sessions to kill:\n  %s", $self->last_error);
+                    return 1;
+                }
+
                 while (my ($sid) = $self->fetch_array) {
+                    $counts++;
                     my $kill_sql = sprintf("ALTER SYSTEM KILL SESSION %s",
                         singlequote($sid),
                     );
                     if ($self->do($kill_sql)) {
+                        $killed++;
                         $o->infof("Killed session %s", $sid);
                     } else {
-                        $o->errorf("Could not kill session %s: %s",
-                            $sid,
+                        $o->errorf("Could not kill session %s:\n  %s",
+                            singlequote($sid),
                             $self->last_error,
                         );
                     }
                 }
+
+                $o->infof("%s out of %s sessions killed", $killed, $counts);
             } else {
                 my $sql = sprintf("ALTER SYSTEM KILL SESSION %s",
                     singlequote(unquote_or_die($sid)),
