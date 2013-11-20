@@ -53,6 +53,8 @@ sub BUILD {
                 }
 
                 my ($fh, $fname) = tempfile();
+                $o->warnf("No filename provided. Generating temporary file: %s", $fname);
+
                 print $fh $query;
                 close $fh;
 
@@ -72,12 +74,12 @@ sub BUILD {
 
                 if ($query) {
                     if ($query eq $placeholder) {
-                        $o->warnf("Query placeholder was not overwritten.");
+                        $o->warnf("Query placeholder was not overwritten; nothing will be run.");
                     } else {
                         $ctrl->run_query($query);
                     }
                 } else {
-                    $o->warnf("No query to run.");
+                    $o->warnf("No query was provided.");
                 }
             }
 
