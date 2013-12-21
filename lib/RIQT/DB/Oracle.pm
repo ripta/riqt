@@ -1,6 +1,7 @@
 package RIQT::DB::Oracle;
 
 use DBI;
+use Digest::MD5 qw(md5_base64);
 use List::Util qw/max/;
 use Moo;
 use String::Escape qw/singlequote/;
@@ -175,7 +176,7 @@ around POSTBUILD => sub {
                 return 0;
             }
 
-            my $stmt_id = sprintf('%s:%02d%04d', $ENV{'USER'}, $$ % 100, time % 10000);
+            my $stmt_id = sprintf('%s:%s', $ENV{'USER'}, md5_base64($query));
             $ctrl->output->println;
             $ctrl->output->info("Statement will be planned as $stmt_id");
 
@@ -383,6 +384,14 @@ around POSTBUILD => sub {
     });
 
     $self->controller->register('show sessions', {
+        signature => [
+            '%s',
+            '%s WHERE <condition>',
+        ],
+        help => q{
+            Show a list of all sessions on the server, regardless of its state.
+            An optional <condition> clause may also be provided.
+        },
         code => sub {
             my ($ctrl, @args) = @_;
 
