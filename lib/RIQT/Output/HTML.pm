@@ -4,6 +4,16 @@ use Moo;
 
 with 'RIQT::Output';
 
+sub BUILD {
+    my ($self) = @_;
+    $self->println(q{<html><body>});
+}
+
+sub DEMOLISH {
+    my ($self, $is_global) = @_;
+    $self->println(q{</body></html>});
+}
+
 sub _escape {
     my ($self, $value) = @_;
     return $value;
@@ -12,32 +22,33 @@ sub _escape {
 sub start {
     my ($self, $fields) = @_;
 
-    $self->println(q{<html><body>});
     $self->println(q{<table>});
-    $self->print('<tr><th>');
-    $self->print(join '</th><th>', map { $self->_escape($_->{'name'}) } @$fields);
-    $self->print('</th></tr>');
+    $self->println('    <tr>');
+    foreach my $field (@$fields) {
+        $self->println('        <th>' . $self->_escape($field->{'name'}) . '</th>');
+    }
+    $self->println('    </tr>');
 }
 
 sub finish {
     my ($self) = @_;
-    $self->println(q{</table></body></html>});
+    $self->println(q{</table>});
 }
 
 sub record {
     my ($self, $values) = @_;
 
-    $self->println(q{<tr>});
+    $self->println(q{    <tr>});
     foreach my $idx (0..$#$values) {
-        $self->print('<td>');
+        $self->print('        <td>');
         if (defined $values->[$idx]) {
             $self->print($self->_escape($values->[$idx]));
         } else {
             $self->print('<em>(null)</em>');
         }
-        $self->print('</td>');
+        $self->println('</td>');
     }
-    $self->println(q{</tr>});
+    $self->println(q{    </tr>});
 }
 
 1;
