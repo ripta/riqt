@@ -155,6 +155,23 @@ around POSTBUILD => sub {
         },
     );
 
+    $self->controller->register('execute', {
+        signature => [
+            '%s <procedure>',
+            '%s <variable> := <function>',
+        ],
+        help => q{
+            Execute a procedure or function. Bind variables, if any, must be declared
+            using VAR before they are used in EXECUTE, e.g.:
+
+                VAR cursor REFCURSOR;
+                EXECUTE :cursor := FUNC_OPEN_THE_CURSOR('John %', 5);
+                PRINT cursor;
+        },
+        # TODO
+        code => sub { },
+    });
+
     $self->controller->register('explain', 'explain plan', 'explain plan for', {
         signature => "%s <query>*",
         help => q{
