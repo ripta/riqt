@@ -1,5 +1,6 @@
 package RIQT::Output::HTML;
 
+use HTML::Entities;
 use Moo;
 
 with 'RIQT::Output';
@@ -16,7 +17,7 @@ sub DEMOLISH {
 
 sub _escape {
     my ($self, $value) = @_;
-    return $value;
+    return encode_entities($value);
 }
 
 sub start {
@@ -25,7 +26,7 @@ sub start {
     $self->println(q{<table>});
     $self->println('    <tr>');
     foreach my $field (@$fields) {
-        $self->println('        <th>' . $self->_escape($field->{'name'}) . '</th>');
+        $self->println('        <th><span class="sql-key-name">' . $self->_escape($field->{'name'}) . '</span></th>');
     }
     $self->println('    </tr>');
 }
@@ -42,9 +43,14 @@ sub record {
     foreach my $idx (0..$#$values) {
         $self->print('        <td>');
         if (defined $values->[$idx]) {
-            $self->print($self->_escape($values->[$idx]));
+            my $escaped = $self->_escape($values->[$idx]);
+            if ($escaped eq $values->[$idx]) {
+                $self->print('<span class="sql-value-raw">' . $escaped . '</span>');
+            } else {
+                $self->print('<span class="sql-value-escaped">' . $escaped . '</span>');
+            }
         } else {
-            $self->print('<em>(null)</em>');
+            $self->print('<span class="sql-value-null">(null)</span>');
         }
         $self->println('</td>');
     }
