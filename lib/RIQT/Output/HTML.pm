@@ -1,9 +1,12 @@
 package RIQT::Output::HTML;
 
+use Data::Dumper;
 use HTML::Entities;
 use Moo;
 
 with 'RIQT::Output';
+
+has fields => (is => 'rw');
 
 sub BUILD {
     my ($self) = @_;
@@ -12,7 +15,8 @@ sub BUILD {
 
 sub DEMOLISH {
     my ($self, $is_global) = @_;
-    $self->println(q{</body></html>});
+    # Hack because $self->out isn't writable at this point :-\
+    print '</body></html>';
 }
 
 sub _escape {
@@ -20,13 +24,20 @@ sub _escape {
     return encode_entities($value);
 }
 
+sub colorize {
+    my ($self, $msg, $color) = @_;
+    return $msg;
+}
+
 sub start {
     my ($self, $fields) = @_;
+    $self->fields($fields);
 
+    # $self->println('<pre>' . Dumper($fields) . '</pre>');
     $self->println(q{<table>});
     $self->println('    <tr>');
     foreach my $field (@$fields) {
-        $self->println('        <th><span class="sql-key-name">' . $self->_escape($field->{'name'}) . '</span></th>');
+        $self->println('        <th class="sql-type-' . $field->{'type'} . '"><span class="sql-key-name">' . $self->_escape($field->{'name'}) . '</span></th>');
     }
     $self->println('    </tr>');
 }
@@ -41,7 +52,7 @@ sub record {
 
     $self->println(q{    <tr>});
     foreach my $idx (0..$#$values) {
-        $self->print('        <td>');
+        $self->print('        <td class="sql-type-' . $self->fields->[$idx]->{'type'} . '">');
         if (defined $values->[$idx]) {
             my $escaped = $self->_escape($values->[$idx]);
             if ($escaped eq $values->[$idx]) {
