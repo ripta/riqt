@@ -2,6 +2,7 @@
 
 use strict;
 use lib 'lib';
+use lib 'fatlib';
 
 use Getopt::Long;
 use IO::Handle;
