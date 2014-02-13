@@ -314,6 +314,10 @@ sub BUILD {
         write   => 0,
     );
 
+    #do {
+    #    my $recv = $self->cache->get('/version');
+    #};
+
     $self->output->debugf("%s is ready", $self);
     $self->{'is_ready'} = 1;
 
