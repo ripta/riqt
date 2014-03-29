@@ -742,7 +742,13 @@ sub load_plugin {
 #
 # TODO: Perhaps clean up the return values and make them less magical?
 sub process {
-    my ($self, $buffer, $line) = @_;
+    my ($self, $buffer, $line, %args) = @_;
+
+    # Echo settings: The echo configuration in the configuration file
+    # takes precendence over the one in %args. If the config has a value,
+    # it is always respected. Otherwise, use the value in %args as the
+    # default. Fallback is always to be quiet.
+    my $echo = $self->config->echo // $args{'echo'} // 0;
 
     # If the last line is '/', then re-execute the buffer, which means
     # we need to skip appending to the query and checking for internal
@@ -807,7 +813,7 @@ sub process {
     # so it might be time to refactor this code
     $self->output->start_timing;
     if ($self->db->prepare($$buffer, save_query => 1) && $self->db->execute) {
-        $self->output->infof("Query: %s", $$buffer) if $$buffer && $self->config->echo;
+        $self->output->infof("Query: %s", $$buffer) if $$buffer && $echo;
 
         # Only show a result set if the query produces a result set
         my $row_num = 0;
@@ -962,7 +968,7 @@ sub run_file {
         last unless defined $line;
         chomp $line;
 
-        eval { $self->process(\$buffer, $line) };
+        eval { $self->process(\$buffer, $line, echo => 1) };
         if ($@) {
             $self->output->errorf("Process died at %s line %d", $file, $lineno);
             $self->output->errorf("    %s", $self->sanitize_death($@));
@@ -991,7 +997,7 @@ sub run_query {
     my $lineno = 0;
     while (my $line = shift @lines) {
         $lineno++;
-        eval { $self->process(\$buffer, $line) };
+        eval { $self->process(\$buffer, $line, echo => 1) };
         if ($@) {
             $self->output->errorf("Error at <STDIN> line %d:\n\t%s", $lineno, $self->sanitize_death($@));
             return 0;
