@@ -6,6 +6,18 @@ use Moo::Role;
 
 with 'RIQT::Component';
 
+has 'buffer' => (
+    is => 'rw',
+    default => sub { [ ] },
+    required => 0,
+);
+
+has 'buffer_size' => (
+    is => 'rw',
+    default => sub { 1_000 },
+    required => 0,
+);
+
 has 'database' => (
     is => 'rw',
 );
@@ -16,6 +28,11 @@ has 'driver' => (
 requires '_build_driver';
 
 has 'last_error' => (
+    is => 'rw',
+    required => 0,
+);
+
+has 'last_prepared_query' => (
     is => 'rw',
     required => 0,
 );
@@ -420,6 +437,8 @@ sub prepare {
     die "Cannot connect to database " . $self->dsn . "" unless $self->driver;
 
     my $sth = $self->driver->prepare($query);
+    $self->last_prepared_query($query) if $opts{'save_query'};
+
     if ($sth) {
         $o->debugf("Query\n%s\n  prepared as %s", $o->reindent($query), $sth);
         $self->statement($sth);
