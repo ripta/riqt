@@ -7,10 +7,15 @@ our $VERSION = '1.0.0';
 
 with 'RIQT::Plugin';
 
+has 'last_filename' => (
+    is => 'rw',
+    required => 0,
+);
+
 sub BUILD {
     my ($self) = @_;
 
-    $self->controller->register('\e', 'ed', 'vi', {
+    $self->controller->register('\e', {
         signature => [
             '%s',
             '%s <filename>',
@@ -40,24 +45,30 @@ sub BUILD {
                 return 1;
             };
 
+            if ($filename && $filename eq '#') {
+                $filename = $self->last_filename;
+            }
+
             if ($filename) {
                 system("$editor $filename");
                 $ctrl->run_file($filename);
             } else {
                 my $placeholder = "-- No previous query to edit. Replace this with your query.\n";
-                my $query = $ctrl->db->last_query;
+                my $query = $ctrl->db->last_prepared_query;
                 if ($query) {
                     $query .= ';' unless $query =~ /;$/;
                 } else {
-                    $query = $placeholder;
+                    $query = $placeholder . "\n";
                 }
 
                 my ($fh, $fname) = tempfile();
+                $fname .= '.sql';
                 $o->warnf("No filename provided. Generating temporary file: %s", $fname);
 
                 print $fh $query;
                 close $fh;
 
+                $self->last_filename($fname);
                 system("$editor $fname");
 
                 open $fh, $fname or do {
@@ -68,8 +79,10 @@ sub BUILD {
                     return 1;
                 };
 
-                local $/ = undef;
-                $query = <$fh>;
+                do {
+                    local $/ = undef;
+                    $query = <$fh>;
+                };
                 close $fh;
 
                 if ($query) {
