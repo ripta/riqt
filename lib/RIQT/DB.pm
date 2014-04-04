@@ -415,13 +415,24 @@ sub name_completion {
 sub object_names {
     my ($self) = @_;
 
-    my $sth = $self->driver->table_info;
-    return unless $sth;
+    my $res = [ ];
+    my $sth;
 
-    my $tables = $sth->fetchall_arrayref;
-    return unless $tables;
+    $sth = $self->driver->table_info;
+    if ($sth) {
+        if (my $tables = $sth->fetchall_arrayref) {
+            push @$res, map { {type => $_->[3], schema => $_->[1], name => $_->[2]} } @$tables;
+        }
+    }
 
-    return [map { {type => $_->[3], schema => $_->[1], name => $_->[2]} } @$tables];
+    $sth = $self->driver->column_info('%', '%', '%', '%');
+    if ($sth) {
+        if (my $columns = $sth->fetchall_arrayref) {
+            push @$res, map { {schema => $_->[1], parent => $_->[2], name => $_->[3]} } @$columns;
+        }
+    }
+
+    return $res;
 }
 
 sub prepare {
