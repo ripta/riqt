@@ -413,7 +413,7 @@ sub name_completion {
 }
 
 sub object_names {
-    my ($self) = @_;
+    my ($self, $with_column) = @_;
 
     my $res = [ ];
     my $sth;
@@ -425,10 +425,13 @@ sub object_names {
         }
     }
 
-    $sth = $self->driver->column_info('%', '%', '%', '%');
-    if ($sth) {
-        if (my $columns = $sth->fetchall_arrayref) {
-            push @$res, map { {schema => $_->[1], parent => $_->[2], name => $_->[3]} } @$columns;
+    # Column name caching is slow on some databases
+    if ($with_column) {
+        $sth = $self->driver->column_info('%', '%', '%', '%');
+        if ($sth) {
+            if (my $columns = $sth->fetchall_arrayref) {
+                push @$res, map { {schema => $_->[1], parent => $_->[2], name => $_->[3]} } @$columns;
+            }
         }
     }
 
