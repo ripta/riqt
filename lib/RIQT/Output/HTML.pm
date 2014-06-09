@@ -10,13 +10,12 @@ has fields => (is => 'rw');
 
 sub BUILD {
     my ($self) = @_;
-    $self->println(q{<html><body>});
+    1;
 }
 
 sub DEMOLISH {
     my ($self, $is_global) = @_;
-    # Hack because $self->out isn't writable at this point :-\
-    print '</body></html>';
+    1;
 }
 
 sub _escape {
