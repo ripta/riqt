@@ -1,2 +1,10 @@
 Rewritten Interactive Querying Terminal
 
+Development Setup
+
+    $ cd riqt.git
+    $ fatpack trace bin/riqt-runner
+    $ fatpack packlists-for `cat fatpacker.trace` > packlists
+    $ fatpack tree `cat packlists`
+    $ bin/riqt-builder bin/riqt-runner > bin/riqt
+
