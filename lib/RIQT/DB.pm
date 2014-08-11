@@ -1,6 +1,7 @@
 package RIQT::DB;
 
 use Time::Piece;
+use String::Escape qw/quote printable/;
 
 use Moo::Role;
 
