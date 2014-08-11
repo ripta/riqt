@@ -4,13 +4,23 @@ use strictures 1;
 use Moo::_Utils;
 use Role::Tiny ();
 use base qw(Role::Tiny);
+use Import::Into;
+
+our $VERSION = '1.005000';
+$VERSION = eval $VERSION;
 
 require Moo::sification;
 
-BEGIN { *INFO = \%Role::Tiny::INFO }
+BEGIN {
+    *INFO = \%Role::Tiny::INFO;
+    *APPLIED_TO = \%Role::Tiny::APPLIED_TO;
+    *ON_ROLE_CREATE = \@Role::Tiny::ON_ROLE_CREATE;
+}
 
 our %INFO;
+our %APPLIED_TO;
 our %APPLY_DEFAULTS;
+our @ON_ROLE_CREATE;
 
 sub _install_tracked {
   my ($target, $name, $code) = @_;
@@ -21,18 +31,25 @@ sub _install_tracked {
 sub import {
   my $target = caller;
   my ($me) = @_;
-  strictures->import;
+  _set_loaded(caller);
+  strictures->import::into(1);
   if ($Moo::MAKERS{$target} and $Moo::MAKERS{$target}{is_class}) {
     die "Cannot import Moo::Role into a Moo class";
   }
   $INFO{$target} ||= {};
   # get symbol table reference
-  my $stash = do { no strict 'refs'; \%{"${target}::"} };
+  my $stash = _getstash($target);
   _install_tracked $target => has => sub {
-    my ($name_proto, %spec) = @_;
-    my $name_isref = ref $name_proto eq 'ARRAY';
-    foreach my $name ($name_isref ? @$name_proto : $name_proto) {
-      my $spec_ref = $name_isref ? +{%spec} : \%spec;
+    my $name_proto = shift;
+    my @name_proto = ref $name_proto eq 'ARRAY' ? @$name_proto : $name_proto;
+    if (@_ % 2 != 0) {
+      require Carp;
+      Carp::croak("Invalid options for " . join(', ', map "'$_'", @name_proto)
+        . " attribute(s): even number of arguments expected, got " . scalar @_)
+    }
+    my %spec = @_;
+    foreach my $name (@name_proto) {
+      my $spec_ref = @name_proto > 1 ? +{%spec} : \%spec;
       ($INFO{$target}{accessor_maker} ||= do {
         require Method::Generate::Accessor;
         Method::Generate::Accessor->new
@@ -57,7 +74,7 @@ sub import {
     $me->apply_roles_to_package($target, @_);
     $me->_maybe_reset_handlemoose($target);
   };
-  return if $INFO{$target}{is_role}; # already exported into this package
+  return if $me->is_role($target); # already exported into this package
   $INFO{$target}{is_role} = 1;
   *{_getglob("${target}::meta")} = $me->can('meta');
   # grab all *non-constant* (stash slot is not a scalarref) subs present
@@ -67,12 +84,18 @@ sub import {
   my @not_methods = ('', map { *$_{CODE}||() } grep !ref($_), values %$stash);
   @{$INFO{$target}{not_methods}={}}{@not_methods} = @not_methods;
   # a role does itself
-  $Role::Tiny::APPLIED_TO{$target} = { $target => undef };
+  $APPLIED_TO{$target} = { $target => undef };
 
+  $_->($target)
+    for @ON_ROLE_CREATE;
+}
+
+push @ON_ROLE_CREATE, sub {
+  my $target = shift;
   if ($INC{'Moo/HandleMoose.pm'}) {
     Moo::HandleMoose::inject_fake_metaclass_for($target);
   }
-}
+};
 
 # duplicate from Moo::Object
 sub meta {
@@ -93,14 +116,28 @@ sub _maybe_reset_handlemoose {
   }
 }
 
-sub _inhale_if_moose {
+sub methods_provided_by {
   my ($self, $role) = @_;
   _load_module($role);
+  $self->_inhale_if_moose($role);
+  die "${role} is not a Moo::Role" unless $self->is_role($role);
+  return $self->SUPER::methods_provided_by($role);
+}
+
+sub is_role {
+  my ($self, $role) = @_;
+  $self->_inhale_if_moose($role);
+  $self->SUPER::is_role($role);
+}
+
+sub _inhale_if_moose {
+  my ($self, $role) = @_;
   my $meta;
-  if (!$INFO{$role}
+  if (!$self->SUPER::is_role($role)
       and (
         $INC{"Moose.pm"}
         and $meta = Class::MOP::class_of($role)
+        and ref $meta ne 'Moo::HandleMoose::FakeMetaClass'
         and $meta->isa('Moose::Meta::Role')
       )
       or (
@@ -109,19 +146,21 @@ sub _inhale_if_moose {
         and $meta->isa('Mouse::Meta::Role')
      )
   ) {
+    my $is_mouse = $meta->isa('Mouse::Meta::Role');
     $INFO{$role}{methods} = {
       map +($_ => $role->can($_)),
+        grep $role->can($_),
+        grep !($is_mouse && $_ eq 'meta'),
         grep !$meta->get_method($_)->isa('Class::MOP::Method::Meta'),
           $meta->get_method_list
     };
-    $Role::Tiny::APPLIED_TO{$role} = {
+    $APPLIED_TO{$role} = {
       map +($_->name => 1), $meta->calculate_all_roles
     };
     $INFO{$role}{requires} = [ $meta->get_required_method_list ];
     $INFO{$role}{attributes} = [
       map +($_ => do {
         my $attr = $meta->get_attribute($_);
-        my $is_mouse = $meta->isa('Mouse::Meta::Role');
         my $spec = { %{ $is_mouse ? $attr : $attr->original_options } };
 
         if ($spec->{isa}) {
@@ -215,29 +254,30 @@ sub role_application_steps {
 sub apply_roles_to_package {
   my ($me, $to, @roles) = @_;
   foreach my $role (@roles) {
+    _load_module($role);
     $me->_inhale_if_moose($role);
-    die "${role} is not a Moo::Role" unless $INFO{$role};
+    die "${role} is not a Moo::Role" unless $me->is_role($role);
   }
   $me->SUPER::apply_roles_to_package($to, @roles);
 }
 
 sub apply_single_role_to_package {
   my ($me, $to, $role) = @_;
+  _load_module($role);
   $me->_inhale_if_moose($role);
-  die "${role} is not a Moo::Role" unless $INFO{$role};
+  die "${role} is not a Moo::Role" unless $me->is_role($role);
   $me->SUPER::apply_single_role_to_package($to, $role);
 }
 
 sub create_class_with_roles {
   my ($me, $superclass, @roles) = @_;
 
-  my $new_name = join(
-    '__WITH__', $superclass, my $compose_name = join '__AND__', @roles
-  );
+  my ($new_name, $compose_name) = $me->_composite_name($superclass, @roles);
 
   return $new_name if $Role::Tiny::COMPOSED{class}{$new_name};
 
   foreach my $role (@roles) {
+      _load_module($role);
       $me->_inhale_if_moose($role);
   }
 
@@ -247,28 +287,30 @@ sub create_class_with_roles {
       and ref($m) ne 'Method::Generate::Accessor') {
     # old fashioned way time.
     *{_getglob("${new_name}::ISA")} = [ $superclass ];
+    $Moo::MAKERS{$new_name} = {is_class => 1};
     $me->apply_roles_to_package($new_name, @roles);
+    _set_loaded($new_name, (caller)[1]);
     return $new_name;
   }
-
-  require Sub::Quote;
 
   $me->SUPER::create_class_with_roles($superclass, @roles);
 
   foreach my $role (@roles) {
-    die "${role} is not a Role::Tiny" unless $INFO{$role};
+    die "${role} is not a Moo::Role" unless $me->is_role($role);
   }
 
   $Moo::MAKERS{$new_name} = {is_class => 1};
 
   $me->_handle_constructor($new_name, $_) for @roles;
 
+  _set_loaded($new_name, (caller)[1]);
   return $new_name;
 }
 
 sub apply_roles_to_object {
   my ($me, $object, @roles) = @_;
   my $new = $me->SUPER::apply_roles_to_object($object, @roles);
+  _set_loaded(ref $new, (caller)[1]);
 
   my $apply_defaults = $APPLY_DEFAULTS{ref $new} ||= do {
     my %attrs = map { @{$INFO{$_}{attributes}||[]} } @roles;
@@ -336,6 +378,7 @@ sub _handle_constructor {
 }
 
 1;
+__END__
 
 =head1 NAME
 
@@ -390,6 +433,33 @@ imported by this module.
 Declares an attribute for the class to be composed into.  See
 L<Moo/has> for all options.
 
+=head1 CLEANING UP IMPORTS
+
+L<Moo::Role> cleans up its own imported methods and any imports
+declared before the C<use Moo::Role> statement automatically.
+Anything imported after C<use Moo::Role> will be composed into
+consuming packages.  A package that consumes this role:
+
+ package My::Role::ID;
+
+ use Digest::MD5 qw(md5_hex);
+ use Moo::Role;
+ use Digest::SHA qw(sha1_hex);
+
+ requires 'name';
+
+ sub as_md5  { my ($self) = @_; return md5_hex($self->name);  }
+ sub as_sha1 { my ($self) = @_; return sha1_hex($self->name); }
+
+ 1;
+
+..will now have a C<< $self->sha1_hex() >> method available to it
+that probably does not do what you expect.  On the other hand, a call
+to C<< $self->md5_hex() >> will die with the helpful error message:
+C<Can't locate object method "md5_hex">.
+
+See L<Moo/"CLEANING UP IMPORTS"> for more details.
+
 =head1 SUPPORT
 
 See L<Moo> for support and contact information.
@@ -401,3 +471,5 @@ See L<Moo> for authors.
 =head1 COPYRIGHT AND LICENSE
 
 See L<Moo> for the copyright and license.
+
+=cut

@@ -2,10 +2,9 @@ package Moo;
 
 use strictures 1;
 use Moo::_Utils;
-use B 'perlstring';
-use Sub::Defer ();
+use Import::Into;
 
-our $VERSION = '1.003000'; # 1.3.0
+our $VERSION = '1.005000';
 $VERSION = eval $VERSION;
 
 require Moo::sification;
@@ -21,8 +20,9 @@ sub _install_tracked {
 sub import {
   my $target = caller;
   my $class = shift;
-  strictures->import;
-  if ($Role::Tiny::INFO{$target} and $Role::Tiny::INFO{$target}{is_role}) {
+  _set_loaded(caller);
+  strictures->import::into(1);
+  if ($INC{'Role/Tiny.pm'} and Role::Tiny->is_role($target)) {
     die "Cannot import Moo into a role";
   }
   $MAKERS{$target} ||= {};
@@ -37,12 +37,18 @@ sub import {
     $class->_maybe_reset_handlemoose($target);
   };
   _install_tracked $target => has => sub {
-    my ($name_proto, %spec) = @_;
-    my $name_isref = ref $name_proto eq 'ARRAY';
-    foreach my $name ($name_isref ? @$name_proto : $name_proto) {
-      # Note that when $name_proto is an arrayref, each attribute
+    my $name_proto = shift;
+    my @name_proto = ref $name_proto eq 'ARRAY' ? @$name_proto : $name_proto;
+    if (@_ % 2 != 0) {
+      require Carp;
+      Carp::croak("Invalid options for " . join(', ', map "'$_'", @name_proto)
+        . " attribute(s): even number of arguments expected, got " . scalar @_)
+    }
+    my %spec = @_;
+    foreach my $name (@name_proto) {
+      # Note that when multiple attributes specified, each attribute
       # needs a separate \%specs hashref
-      my $spec_ref = $name_isref ? +{%spec} : \%spec;
+      my $spec_ref = @name_proto > 1 ? +{%spec} : \%spec;
       $class->_constructor_maker_for($target)
             ->register_attribute_specs($name, $spec_ref);
       $class->_accessor_maker_for($target)
@@ -59,6 +65,9 @@ sub import {
     };
   }
   return if $MAKERS{$target}{is_class}; # already exported into this package
+  my $stash = _getstash($target);
+  my @not_methods = map { *$_{CODE}||() } grep !ref($_), values %$stash;
+  @{$MAKERS{$target}{not_methods}={}}{@not_methods} = @not_methods;
   $MAKERS{$target}{is_class} = 1;
   {
     no strict 'refs';
@@ -81,7 +90,7 @@ sub _set_superclasses {
   my $target = shift;
   foreach my $superclass (@_) {
     _load_module($superclass);
-    if ($INC{"Role/Tiny.pm"} && $Role::Tiny::INFO{$superclass}) {
+    if ($INC{'Role/Tiny.pm'} && Role::Tiny->is_role($superclass)) {
       require Carp;
       Carp::croak("Can't extend role '$superclass'");
     }
@@ -115,7 +124,8 @@ sub _accessor_maker_for {
   $MAKERS{$target}{accessor} ||= do {
     my $maker_class = do {
       if (my $m = do {
-            if (my $defer_target = 
+            require Sub::Defer;
+            if (my $defer_target =
                   (Sub::Defer::defer_info($target->can('new'))||[])->[0]
               ) {
               my ($pkg) = ($defer_target =~ /^(.*)::[^:]+$/);
@@ -146,28 +156,38 @@ sub _constructor_maker_for {
     if ($t_new) {
       if ($t_new == Moo::Object->can('new')) {
         $moo_constructor = 1;
-      } elsif (my $defer_target = (Sub::Defer::defer_info($t_new)||[])->[0]) {
+      }
+      elsif (my $defer_target = (Sub::Defer::defer_info($t_new)||[])->[0]) {
         my ($pkg) = ($defer_target =~ /^(.*)::[^:]+$/);
         if ($MAKERS{$pkg}) {
           $moo_constructor = 1;
           $con = $MAKERS{$pkg}{constructor};
         }
       }
-    } else {
+    }
+    else {
       $moo_constructor = 1; # no other constructor, make a Moo one
     }
     ($con ? ref($con) : 'Method::Generate::Constructor')
       ->new(
         package => $target,
         accessor_generator => $class->_accessor_maker_for($target),
-        construction_string => (
-          $moo_constructor
-            ? ($con ? $con->construction_string : undef)
-            : ('$class->'.$target.'::SUPER::new($class->can(q[FOREIGNBUILDARGS]) ? $class->FOREIGNBUILDARGS(@_) : @_)')
+        $moo_constructor ? (
+          $con ? (construction_string => $con->construction_string) : ()
+        ) : (
+          construction_builder => sub {
+            '$class->next::method('
+              .($target->can('FOREIGNBUILDARGS') ?
+                '$class->FOREIGNBUILDARGS(@_)' : '@_')
+              .')'
+          },
         ),
         subconstructor_handler => (
           '      if ($Moo::MAKERS{$class}) {'."\n"
-          .'        '.$class.'->_constructor_maker_for($class,'.perlstring($target).');'."\n"
+          .'        if ($Moo::MAKERS{$class}{constructor}) {'."\n"
+          .'          return $class->'.$target.'::SUPER::new(@_);'."\n"
+          .'        }'."\n"
+          .'        '.$class.'->_constructor_maker_for($class);'."\n"
           .'        return $class->new(@_)'.";\n"
           .'      } elsif ($INC{"Moose.pm"} and my $meta = Class::MOP::get_metaclass_by_name($class)) {'."\n"
           .'        return $meta->new_object($class->BUILDARGS(@_));'."\n"
@@ -179,7 +199,26 @@ sub _constructor_maker_for {
   }
 }
 
+sub _concrete_methods_of {
+  my ($me, $role) = @_;
+  my $makers = $MAKERS{$role};
+  # grab role symbol table
+  my $stash = _getstash($role);
+  # reverse so our keys become the values (captured coderefs) in case
+  # they got copied or re-used since
+  my $not_methods = { reverse %{$makers->{not_methods}||{}} };
+  +{
+    # grab all code entries that aren't in the not_methods list
+    map {
+      my $code = *{$stash->{$_}}{CODE};
+      ( ! $code or exists $not_methods->{$code} ) ? () : ($_ => $code)
+    } grep !ref($stash->{$_}), keys %$stash
+  };
+}
+
 1;
+__END__
+
 =pod
 
 =encoding utf-8
@@ -193,6 +232,7 @@ Moo - Minimalist Object Orientation (with Moose compatibility)
  package Cat::Food;
 
  use Moo;
+ use namespace::clean;
 
  sub feed_lion {
    my $self = shift;
@@ -409,7 +449,9 @@ Returns true if the object composes in the passed role.
  extends 'Parent::Class';
 
 Declares base class. Multiple superclasses can be passed for multiple
-inheritance (but please use roles instead).
+inheritance (but please use roles instead).  The class will be loaded, however
+no errors will be triggered if it can't be found and there are already subs in
+the class.
 
 Calling extends more than once will REPLACE your superclasses, not add to
 them like 'use base' would.
@@ -423,7 +465,8 @@ or
  with 'Some::Role1', 'Some::Role2';
 
 Composes one or more L<Moo::Role> (or L<Role::Tiny>) roles into the current
-class.  An error will be raised if these roles have conflicting methods.
+class.  An error will be raised if these roles have conflicting methods.  The
+roles will be loaded using the same mechansim as C<extends> uses.
 
 =head2 has
 
@@ -518,7 +561,7 @@ Takes a coderef which is meant to coerce the attribute.  The basic idea is to
 do something like the following:
 
  coerce => sub {
-   $_[0] + 1 unless $_[0] % 2
+   $_[0] % 2 ? $_[0] : $_[0] + 1
  },
 
 Note that L<Moo> will always fire your coercion: this is to permit
@@ -614,7 +657,7 @@ Takes a method name which will clear the attribute.
 
 If you set this to just C<1>, the clearer is automatically named
 C<clear_${attr_name}> if your attribute's name does not start with an
-underscore, or <_clear_${attr_name_without_the_underscore}> if it does.
+underscore, or C<_clear_${attr_name_without_the_underscore}> if it does.
 This feature comes from L<MooseX::AttributeShortcuts>.
 
 =item * C<lazy>
@@ -690,8 +733,10 @@ aware can take advantage of this.
 
 To do this, you can write
 
-  use Moo;
   use Sub::Quote;
+
+  use Moo;
+  use namespace::clean;
 
   has foo => (
     is => 'ro',
@@ -721,6 +766,48 @@ which will be inlined as
 
 See L<Sub::Quote> for more information, including how to pass lexical
 captures that will also be compiled into the subroutine.
+
+=head1 CLEANING UP IMPORTS
+
+L<Moo> will not clean up imported subroutines for you; you will have
+to do that manually. The recommended way to do this is to declare your
+imports first, then C<use Moo>, then C<use namespace::clean>.
+Anything imported before L<namespace::clean> will be scrubbed.
+Anything imported or declared after will be still be available.
+
+ package Record;
+
+ use Digest::MD5 qw(md5_hex);
+
+ use Moo;
+ use namespace::clean;
+
+ has name => (is => 'ro', required => 1);
+ has id => (is => 'lazy');
+ sub _build_id {
+   my ($self) = @_;
+   return md5_hex($self->name);
+ }
+
+ 1;
+
+If you were to import C<md5_hex> after L<namespace::clean> you would
+be able to call C<< ->md5_hex() >> on your C<Record> instances (and it
+probably wouldn't do what you expect!).
+
+L<Moo::Role>s behave slightly differently.  Since their methods are
+composed into the consuming class, they can do a little more for you
+automatically.  As long as you declare your imports before calling
+C<use Moo::Role>, those imports and the ones L<Moo::Role> itself
+provides will not be composed into consuming classes, so there's usually
+no need to use L<namespace::clean>.
+
+B<On L<namespace::autoclean>:> If you're coming to Moo from the Moose
+world, you may be accustomed to using L<namespace::autoclean> in all
+your packages. This is not recommended for L<Moo> packages, because
+L<namespace::autoclean> will inflate your class to a full L<Moose>
+class.  It'll work, but you will lose the benefits of L<Moo>.  Instead
+you are recommended to just use L<namespace::clean>.
 
 =head1 INCOMPATIBILITIES WITH MOOSE
 
@@ -772,7 +859,8 @@ or array reference as a default is almost always incorrect since the value is
 then shared between all objects using that default.
 
 C<lazy_build> is not supported; you are instead encouraged to use the
-C<< is => 'lazy' >> option supported by L<Moo> and L<MooseX::AttributeShortcuts>.
+C<< is => 'lazy' >> option supported by L<Moo> and
+L<MooseX::AttributeShortcuts>.
 
 C<auto_deref> is not supported since the author considers it a bad idea and
 it has been considered best practice to avoid it for some time.
@@ -785,8 +873,16 @@ Since C<coerce> does not require C<isa> to be defined but L<Moose> does
 require it, the metaclass inflation for coerce alone is a trifle insane
 and if you attempt to subtype the result will almost certainly break.
 
-Handling of warnings: when you C<use Moo> we enable FATAL warnings.  The nearest
-similar invocation for L<Moose> would be:
+C<BUILDARGS> is not triggered if your class does not have any attributes.
+Without attributes, C<BUILDARGS> return value would be ignored, so we just
+skip calling the method instead.
+
+Handling of warnings: when you C<use Moo> we enable FATAL warnings, and some
+several extra pragmas when used in development: L<indirect>,
+L<multidimensional>, and L<bareword::filehandles>.  See the L<strictures>
+documentation for the details on this.
+
+A similar invocation for L<Moose> would be:
 
   use Moose;
   use warnings FATAL => "all";
@@ -830,17 +926,19 @@ to Moo by providing a more Moose-like interface.
 
 Users' IRC: #moose on irc.perl.org
 
-=for html <a href="http://chat.mibbit.com/#moose@irc.perl.org">(click for instant chatroom login)</a>
+=for html <a href="http://chat.mibbit.com/#moose@irc.perl.org">(click for
+instant chatroom login)</a>
 
 Development and contribution IRC: #web-simple on irc.perl.org
 
-=for html <a href="http://chat.mibbit.com/#web-simple@irc.perl.org">(click for instant chatroom login)</a>
+=for html <a href="http://chat.mibbit.com/#web-simple@irc.perl.org">(click for
+instant chatroom login)</a>
 
-Bugtracker: L<http://rt.cpan.org/NoAuth/Bugs.html?Dist=Moo>
+Bugtracker: L<https://rt.cpan.org/Public/Dist/Display.html?Name=Moo>
 
-Git repository: L<git://git.shadowcat.co.uk/gitmo/Moo.git>
+Git repository: L<git://github.com/moose/Moo.git>
 
-Git web access: L<http://git.shadowcat.co.uk/gitweb/gitweb.cgi?p=gitmo/Moo.git>
+Git browser: L<https://github.com/moose/Moo>
 
 =head1 AUTHOR
 
@@ -875,6 +973,8 @@ tobyink - Toby Inkster (cpan:TOBYINK) <tobyink@cpan.org>
 haarg - Graham Knop (cpan:HAARG) <haarg@cpan.org>
 
 mattp - Matt Phillips (cpan:MATTP) <mattp@cpan.org>
+
+bluefeet - Aran Deltac (cpan:BLUEFEET) <bluefeet@gmail.com>
 
 =head1 COPYRIGHT
 
