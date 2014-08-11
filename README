@@ -8,3 +8,9 @@ Development Setup
     $ fatpack tree `cat packlists`
     $ bin/riqt-builder bin/riqt-runner > bin/riqt
 
+This rewrite brought to you by Ripta Pasay <rpasay@rent.com> for Rent.com.
+
+Based on work by Mark Bracher <from-piqt@brachers.org>, incorporating extensive
+modifications by Buddy Burden <bburden@rent.com>, and some changes by Ripta
+Pasay <rpasay@rent.com> and Kate Yoak <kyoak@rent.com>.
+
