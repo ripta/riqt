@@ -4,7 +4,7 @@ use DBI;
 use Digest::MD5 qw(md5_base64);
 use List::Util qw/max/;
 use Moo;
-use String::Escape qw/singlequote/;
+use String::Escape qw/singlequote quote printable/;
 
 our $VERSION = '0.1.3';
 

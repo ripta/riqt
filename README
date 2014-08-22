@@ -14,3 +14,20 @@ Based on work by Mark Bracher <from-piqt@brachers.org>, incorporating extensive
 modifications by Buddy Burden <bburden@rent.com>, and some changes by Ripta
 Pasay <rpasay@rent.com> and Kate Yoak <kyoak@rent.com>.
 
+
+: 1370883590:0;local-lib/bin/fatpack trace extern/piqt/piqt-new
+: 1370883596:0;less fat
+: 1370883598:0;less fatpacker.trace
+: 1370883617:0;fatpack packlists-for `cat fatpack.trace` > packlists
+: 1370883623:0;local-lib/bin/fatpack packlists-for `cat fatpack.trace` > packlists
+: 1370883683:0;less packlists
+: 1370883726:0;less local-lib/lib/perl5/x86_64-linux/auto/String/Escape/.packlist
+: 1370883803:0;local-lib/bin/fatpack tree `cat packlists`
+: 1370883815:0;local-lib/bin/fatpack file | less
+: 1370883844:0;local-lib/bin/fatpack file > packed.pl
+: 1370883876:0;ll packed.pl
+: 1370883958:0;local-lib/bin/fatpack -h
+: 1370883961:0;local-lib/bin/fatpack --help
+: 1370883964:0;local-lib/bin/fatpack help
+: 1370884370:0;local-lib/bin/fatpack file extern/piqt/piqt-new > packed.pl
+
